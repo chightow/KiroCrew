@@ -26,7 +26,10 @@ from kiro_crew import members as members_mod
 from kiro_crew.config.loader import KiroCrewConfig
 from kiro_crew.context import _neutralize_structural_markers
 from kiro_crew.dashboard.chat_runner import _run_chat
-from kiro_crew.dashboard.kiro_readiness import reject_if_kiro_unverified
+from kiro_crew.dashboard.kiro_readiness import (
+    reject_if_kiro_unverified,
+    session_bypasses_kiro_readiness,
+)
 from kiro_crew.dashboard.state import DashboardState, _normalize_slot_key
 from kiro_crew.dashboard.turn_dispatch import chat_turn_timeout_secs
 from kiro_crew.security import redact_credentials, redact_exfiltration_urls
@@ -135,19 +138,33 @@ async def api_completions(request: web.Request) -> web.StreamResponse:
     # an AcpAuthRequired turn appends is invisible and the request would return
     # HTTP 200 with empty content — an SDK client cannot tell that apart from a
     # model that legitimately said nothing. Fail closed until this endpoint
-    # translates AcpAuthRequired into an OpenAI-shaped error.
-    blocked = await reject_if_kiro_unverified(request)
-    if blocked is not None:
-        return web.json_response(
-            {
-                "error": {
-                    "message": "Kiro CLI setup or sign-in is required before starting a session.",
-                    "type": "service_unavailable_error",
-                    "code": "kiro_prerequisite_required",
-                }
-            },
-            status=503,
-        )
+    # translates AcpAuthRequired into an OpenAI-shaped error -- except on a BYO-auth
+    # backend (pi first), whose sessions never needed Kiro sign-in: for an id-bound
+    # call the slot's session decides, and an ephemeral call (no id) runs on the
+    # default backend. Peeked, not parsed: a body that fails to parse still reaches
+    # the real parse below, so malformed input keeps its existing status.
+    _peek_id: object = None
+    try:
+        _peek_body = await request.json()
+        if isinstance(_peek_body, dict):
+            _peek_id = _peek_body.get("id")
+    except Exception:
+        _peek_id = None
+    if not await session_bypasses_kiro_readiness(
+        _peek_id if isinstance(_peek_id, str) and _peek_id else None
+    ):
+        blocked = await reject_if_kiro_unverified(request)
+        if blocked is not None:
+            return web.json_response(
+                {
+                    "error": {
+                        "message": "Kiro CLI setup or sign-in is required before starting a session.",
+                        "type": "service_unavailable_error",
+                        "code": "kiro_prerequisite_required",
+                    }
+                },
+                status=503,
+            )
     state: DashboardState = request.app["state"]
 
     try:

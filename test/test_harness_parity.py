@@ -55,6 +55,7 @@ from kiro_crew.acp.types import (
     PROVIDER_LABEL_PI,
 )
 from kiro_crew.acp_backends import (
+    ACP_BACKENDS_BYO_AUTH,
     ACP_BACKENDS_EFFORT_VIA_CONFIG_OPTION,
     ACP_BACKENDS_KIRO_SLASH_COMMANDS,
     ACP_BACKENDS_MCP_CONFIG_HOT_RELOAD,
@@ -372,6 +373,7 @@ def test_capability_sets_are_subsets_of_known_backends() -> None:
         # refuses an unknown id, so this is the belt to that braces — a member
         # arriving some other way still has to be a backend the code recognizes.
         ("selectable_backends()", selectable_backends()),
+        ("ACP_BACKENDS_BYO_AUTH", ACP_BACKENDS_BYO_AUTH),
         ("ACP_BACKENDS_SESSION_SHARING", ACP_BACKENDS_SESSION_SHARING),
         ("ACP_BACKENDS_STEER", ACP_BACKENDS_STEER),
         ("ACP_BACKENDS_INTERNAL_SANDBOX", ACP_BACKENDS_INTERNAL_SANDBOX),

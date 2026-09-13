@@ -114,6 +114,9 @@ with no row here.
    * - ``ACP_BACKENDS_HOST_AUTH_CALLBACK``
      - driver-internal (whether the reader loop may answer the engine's
        ``_kiro/auth/getAccessToken`` from Crew's own vault)
+   * - ``ACP_BACKENDS_BYO_AUTH``
+     - pre-session registry query (whether a session on this backend needs any
+       Kiro sign-in: members skip the Kiro readiness gates)
    * - ``ACP_BACKENDS_SIDE_READONLY``
      - pre-session registry query (whether a side-chat turn may execute
        read-only tools under the derived ``<agent>--readonly`` spec; asked
@@ -885,6 +888,53 @@ ACP_BACKENDS_STRUCTURED_REFUSAL = frozenset({ACP_BACKEND_KIRO, ACP_BACKEND_KAS})
 # ``initialize`` result advertises its own ``opencode-login`` auth method, so it
 # never asks this host for a token.
 ACP_BACKENDS_HOST_AUTH_CALLBACK = frozenset({ACP_BACKEND_KAS})
+
+# Backends that bring their OWN auth and never need Kiro sign-in.
+#
+# A member authenticates from its own credential files or provider keys -- pi
+# from ``~/.pi/agent`` (``PI_AGENT_DIR`` relocates it), the way opencode does
+# from its own file -- so no device-code sign-in gate, Kiro-identity
+# requirement, or host-auth demand on its path has a security function: there
+# is no Kiro subscription involved and Crew never holds a credential to hand
+# it (it is deliberately NOT in ``ACP_BACKENDS_HOST_AUTH_CALLBACK``).
+# Membership is what lets a session on the backend SKIP the Kiro readiness
+# gates (``dashboard.kiro_readiness``): the destructive reruns and the
+# OpenAI-compat endpoint consult :func:`bypasses_kiro_signin_gate` before
+# calling ``reject_if_kiro_unverified``.
+#
+# EMPTY on main: pi -- the first intended member -- is registered selectable
+# on the ``feat/pi-acp-selectable`` side (which also adds it to
+# ``ACP_BACKENDS_KNOWN``, as harness-parity H8 requires of every member), and
+# joins this set there. Other self-authenticating backends join later, each by
+# demonstrating the property (own credential store, no Kiro-identity
+# dependency) -- never by the absence of another harness (harness-parity H6).
+# An empty set fails closed by construction: with no member, every backend
+# keeps every existing requirement.
+ACP_BACKENDS_BYO_AUTH: FrozenSet[str] = frozenset()
+
+
+def bypasses_kiro_signin_gate(value: object) -> bool:
+    """True when a session configured for *value* needs no Kiro sign-in.
+
+    The predicate behind the BYO-auth bypass: a member of
+    :data:`ACP_BACKENDS_BYO_AUTH` whose configured id is still what the
+    session would actually run on. Takes the RAW configured value (before
+    :func:`resolve_selected_backend`), because resolving first would degrade
+    an unregistered id to kiro and the bypass could never fire for the very
+    backend it exists for.
+
+    The selectability conjunct is the fail-closed half. A member denied by
+    deployment policy (or simply not registered on this build) degrades to
+    kiro at session start, and THAT turn needs Kiro sign-in -- so a member
+    that does not resolve to itself stays gated. Non-string shapes from a
+    hand-edited ``config.json`` and unknown ids stay gated the same way.
+    """
+    return (
+        isinstance(value, str)
+        and value in ACP_BACKENDS_BYO_AUTH
+        and resolve_selected_backend(value) == value
+    )
+
 
 # Backends that keep their OWN session records and resolve a resume from the
 # ``sessionId`` alone. For a member there is no Crew-side transcript to check
