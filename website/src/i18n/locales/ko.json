@@ -2842,6 +2842,8 @@
         "cancel": "취소",
         "chatEmpty": "{{name}}에 아직 보낸 내용이 없습니다.",
         "diagramFrameTitle": "{{name}} 다이어그램",
+        "discardDraft": "저장하지 않은 변경 사항 버리기",
+        "discardDraftHint": "저장하지 않은 변경 사항은 영구적으로 삭제됩니다.",
         "edit": "이 출력 편집",
         "edited": "편집됨",
         "editorLabel": "{{name}} 출력, 편집 가능",
@@ -2850,8 +2852,9 @@
         "mute": "{{name}} 음소거",
         "mutedHint": "회의를 듣지 않습니다",
         "revert": "내 편집 취소",
-        "revertHint": "내 편집을 취소하고 {{name}}이(가) 작성한 내용 표시",
+        "revertHint": "내 편집을 영구적으로 삭제하고 {{name}}이(가) 작성한 내용 표시",
         "save": "저장",
+        "saving": "저장 중…",
         "send": "보내기",
         "showChat": "채팅 표시",
         "showOutput": "출력 표시",
@@ -2860,7 +2863,10 @@
       },
       "broadcastBar": {
         "heard": "인식된 내용: {{text}}",
+        "pausedPlaceholder": "에이전트 일시 중지됨 — 보내려면 재개하세요",
+        "pausingPlaceholder": "일시 중지 중 — 보낼 수 없음",
         "placeholder": "듣고 있는 모든 에이전트에게 말하기…",
+        "resumingPlaceholder": "재개 중 — 곧 보내기가 가능해집니다",
         "send": "보내기"
       },
       "list": {
@@ -2910,6 +2916,7 @@
         "back": "뒤로",
         "endAndReview": "종료하고 검토",
         "ended": "종료됨",
+        "endingReview": "종료 중 — 검토를 준비하고 있습니다…",
         "live": "진행 중",
         "loadFailed": "이 회의를 열 수 없습니다",
         "moreActions": "추가 작업",
@@ -2917,8 +2924,10 @@
         "noAgentsHint": "위쪽 바에서 하나를 켜거나 프리셋을 선택하세요.",
         "pause": "일시 중지",
         "paused": "일시 중지됨",
+        "pausing": "일시 중지 중…",
         "refresh": "새로 고침",
         "restart": "다시 시작",
+        "resuming": "재개 중…",
         "retryAgents": "재시도",
         "start": "시작",
         "toggleTasks": "액션 아이템",
@@ -3047,6 +3056,7 @@
       "transcript": {
         "empty": "아직 기록이 없습니다",
         "emptyHintLive": "회의가 진행되면 확정된 음성이 여기에 표시됩니다.",
+        "emptyHintPaused": "일시 중지됨 — 재개하면 음성이 여기에 표시됩니다.",
         "emptyHintRecorded": "이 회의에는 기록된 내용이 없습니다.",
         "full": "기록 용량이 가득 찼습니다. 새로운 음성과 브로드캐스트는 더 이상 기록되거나 에이전트에게 전송되지 않습니다.",
         "jumpToLatest": "최신 내용으로 이동",
@@ -4360,7 +4370,7 @@
         "creating": "만드는 중",
         "directly_under_the_root": "루트 바로 아래",
         "inside_name": "{{name}} 내부",
-        "n_already_existed": "{{n}}개는 이미 있었음",
+        "n_already_set_up": "{{n}}개 이미 설정됨",
         "n_created": "{{n}}개 생성",
         "n_failed": "{{n}}개 실패",
         "n_possible_sub_folders_inside_packages_above": "위 패키지 내부의 하위 폴더 후보 {{n}}개",
@@ -4374,6 +4384,7 @@
         "project_directory": "프로젝트 디렉터리",
         "re_scan": "다시 스캔",
         "results": "결과",
+        "root_already_exists_nothing_to_create": "이 디렉터리에는 이미 사이드바 폴더가 있으므로 만들 항목이 없습니다.",
         "root_changed_scan_before_creating": "위 디렉터리가 변경되었습니다. 폴더를 만들기 전에 스캔하세요.",
         "scan": "스캔",
         "scan_a_project_directory_then_create_a_sidebar": "프로젝트 디렉터리를 스캔한 다음 선택한 하위 프로젝트마다 사이드바 폴더를 만듭니다.",
@@ -8171,11 +8182,11 @@
       "pull_request_url": "풀 리퀘스트 URL",
       "pull_request_url_placeholder": "예: https://github.com/org/repo/pull/123…",
       "request_failed": "모니터 요청에 실패했습니다. 다시 시도하세요.",
-      "session_mode_unavailable": "크루 또는 멤버 세션은 크루를 통해 작업을 전달하므로 모니터를 사용할 수 없습니다.",
+      "session_mode_unavailable": "크루 세션과 멤버 세션에서는 자동화를 사용할 수 없습니다. 이러한 세션은 작업을 크루를 통해 라우팅하기 때문입니다.",
       "restart_monitor": "모니터 다시 시작",
       "review_ready": "검토 준비 완료",
       "save_changes": "변경 사항 저장",
-      "set_up_bounded_monitor": "제한형 모니터 설정",
+      "set_up_bounded_monitor": "대신 풀 리퀘스트 모니터링",
       "sidebar_status": "모니터 · {{status}}",
       "start_monitor": "모니터 시작",
       "statuses": {
@@ -8194,9 +8205,8 @@
       "title": "제한형 풀 리퀘스트 모니터",
       "tokens": "토큰: {{count}}",
       "unknown": "알 수 없음",
-      "back_to_bounded_monitor": "제한된 모니터로 돌아가기",
-      "legacy_notice": "이 기존 루프는 매 주기마다 에이전트를 호출하며 제한 없이 실행될 수 있습니다.",
-      "use_legacy_costly": "기존 목표 루프 사용(비용 높음)",
+      "legacy_notice": "이 목표 루프는 매 주기마다 에이전트를 호출하며 제한 없이 실행될 수 있습니다.",
+      "use_legacy_costly": "목표 루프로 돌아가기",
       "wake_instructions": "에이전트가 깨어날 때의 지침",
       "wake_instructions_too_long": "{{max}}자 이하로 입력하세요.",
       "wakes": "호출: {{count}}",
@@ -11764,6 +11774,7 @@
         "no_matching_entries": "일치하는 항목 없음",
         "no_semantic_entries": "의미 기억 항목 없음",
         "of": "중",
+        "open_embedding_model_settings": "임베딩 모델 설정 열기",
         "preview": "미리 보기",
         "preview_what_gets_injected_into_prompts_enter_a": "프롬프트에 주입되는 내용을 미리 봅니다. 검색어를 입력하면 일화 기억 검색 결과를 확인할 수 있습니다.",
         "ready": "준비 완료!",
@@ -14524,6 +14535,10 @@
       "plainDiff": {
         "description": "차이를 구문 강조 없이 일반 unified diff 텍스트로 표시합니다. 큰 diff에서 메모리를 덜 사용합니다.",
         "label": "일반 diff"
+      },
+      "diffLayout": {
+        "description": "이전 코드와 새 코드를 두 열로 표시합니다. 끄면 한 열의 통합 뷰로 표시합니다. 여기서 바꾸든 diff에서 바꾸든 어디에나 적용됩니다.",
+        "label": "분할(좌우 나란히) diff"
       }
     },
     "display": {
@@ -14661,6 +14676,10 @@
   },
   "store": {
     "chatSlice": {
+      "session_gone_open_failed": "클릭한 세션은 삭제되어 열 수 없습니다.",
+      "session_open_error_named": "‘{{name}}’을(를) 열 수 없었습니다.",
+      "session_open_error": "세션을 열 수 없었습니다.",
+      "session_gone_open_failed_named": "‘{{name}}’은(는) 삭제되어 열 수 없습니다.",
       "truncated": "…(생략됨)"
     }
   },

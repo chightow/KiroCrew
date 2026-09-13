@@ -295,7 +295,7 @@ Two legs cover it, and neither costs a PR any minutes: both live in
 | Leg | Job | Script | What only a real install shows |
 | --- | --- | --- | --- |
 | Linux | `build-desktop.yml` -> `Smoke-install Linux packages (deb + rpm)` | `scripts/smoke-linux-packages.sh` | dependency names resolve in Ubuntu 24.04 and Amazon Linux 2023, the `.desktop` entry's `StartupWMClass` equals Electron's app_id, the maintainer scripts place and remove `/usr/bin/<exe>`, and the beacon stamp names THIS format |
-| Windows | `build-windows.yml` -> `Smoke-install Windows installer (x64)` | `scripts/smoke-windows-install.ps1` | the uninstall registration and its `InstallLocation`, the install-root ownership boundary, where the Start Menu shortcut POINTS, that the bundled CLI runs, that the installed gateway answers `/api/health`, and that a silent uninstall removes both the registration and the tree |
+| Windows | `build-windows.yml` -> `Smoke-install Windows installer (x64)` | `scripts/smoke-windows-install.ps1` | the uninstall registration and the `InstallLocation` in its paired install-info key (`<hive>\Software\<GUID>`, where electron-builder writes it), the install-root ownership boundary, where the Start Menu shortcut POINTS, that the bundled CLI runs, that the installed gateway answers `/api/health`, and that a silent uninstall removes the registration, the install-info key and the tree |
 
 The Windows leg is gated on the build job's `artifact_uploaded` output rather
 than on `needs` alone: publish runs build Windows under `continue-on-error`
@@ -541,9 +541,26 @@ scenarios, and the REQUIRE marker would be the only thing between that and a
 green nightly. A systemd-capable container (the pattern `docker-smoke.yml` uses)
 is the fallback if a future runner image cannot linger; it is not needed today.
 
-macOS needs no equivalent. The pod's launchd backend uses the per-user launchd
-domain, which a runner session already has, so that leg only prints
-`launchctl print user/<uid>` to keep the two logs readable side by side.
+**The Linux leg also has to UNLOCK the namespace sandbox.** `ubuntu-24.04`
+restricts unprivileged user namespaces through AppArmor
+(`kernel.apparmor_restrict_unprivileged_userns=1`), so the pod gateway's
+`unshare(CLONE_NEWNS)` answers `EPERM` and its only Linux sandbox backend is
+unavailable. A pod pins `agent.sandbox=auto` with the unsandboxed opt-in off
+(`pod/runtime.py`), so the pod's boot probe then refuses the boot -- correctly,
+since a gateway whose every agent turn fails while `/health` answers 200 is the
+exact condition it exists to catch. The job runs
+`sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0`, the same step
+`ci.yml`'s `e2e` and `backend-test-sandbox` jobs run, and then PROVES it with
+`unshare --mount --map-root-user true` so a runner image that stops allowing it
+fails by name rather than six scenarios deep. Seeding
+`sandbox_allow_unsandboxed_exec` into the pod instead is deliberately not the
+remedy: it would pass the suite by running the product in a mode a real pod
+refuses.
+
+macOS needs neither. The pod's launchd backend uses the per-user launchd domain,
+which a runner session already has, and its seatbelt sandbox backend needs no host
+opt-in, so that leg only prints `launchctl print user/<uid>` to keep the two logs
+readable side by side.
 
 ### The canary
 

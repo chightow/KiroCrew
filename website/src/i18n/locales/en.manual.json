@@ -93,6 +93,7 @@
       "transcript": {
         "empty": "No transcript yet",
         "emptyHintLive": "Final speech will appear here as the meeting continues.",
+        "emptyHintPaused": "Paused — speech will appear here after you resume.",
         "emptyHintRecorded": "No transcript was recorded for this meeting.",
         "full": "Transcript is full. New speech and broadcasts are no longer being recorded or sent to agents.",
         "jumpToLatest": "Jump to latest",
@@ -100,6 +101,16 @@
         "regionLabel": "Meeting transcript",
         "title": "Transcript",
         "typed": "Typed"
+      },
+      "meeting": {
+        "endingReview": "Ending — preparing review…",
+        "pausing": "Pausing…",
+        "resuming": "Resuming…"
+      },
+      "broadcastBar": {
+        "pausedPlaceholder": "Agents paused — resume to send",
+        "pausingPlaceholder": "Pausing — sending is unavailable",
+        "resumingPlaceholder": "Resuming — sending will be available shortly"
       }
     },
     "autoResearch": {
@@ -1146,6 +1157,12 @@
     "pptxMaker": {
       "libraryPanel": {
         "font_specimen": "Aa"
+      }
+    },
+    "projectScaffolder": {
+      "projectScaffolderPage": {
+        "n_already_set_up": "{{n}} already set up",
+        "root_already_exists_nothing_to_create": "This directory already has its sidebar folder, so there is nothing left to create."
       }
     },
     "designCritique": {
@@ -2973,11 +2990,11 @@
       "pull_request_url": "Pull request URL",
       "pull_request_url_placeholder": "e.g. https://github.com/org/repo/pull/123…",
       "request_failed": "The monitor request failed. Try again.",
-      "session_mode_unavailable": "Monitors aren't available in crew or member sessions because those sessions route work through their crew.",
+      "session_mode_unavailable": "Automations aren't available in crew or member sessions because those sessions route work through their crew.",
       "restart_monitor": "Restart monitor",
       "review_ready": "Review ready",
       "save_changes": "Save changes",
-      "set_up_bounded_monitor": "Set up a bounded monitor",
+      "set_up_bounded_monitor": "Watch a pull request instead",
       "sidebar_status": "Monitor · {{status}}",
       "start_monitor": "Start monitor",
       "statuses": {
@@ -2996,9 +3013,8 @@
       "title": "Bounded pull request monitor",
       "tokens": "Tokens: {{count}}",
       "unknown": "Unknown",
-      "back_to_bounded_monitor": "Back to bounded monitor",
-      "legacy_notice": "This legacy loop invokes the agent every cycle and can run without a limit.",
-      "use_legacy_costly": "Use legacy goal loop (costly)",
+      "legacy_notice": "This goal loop invokes the agent every cycle and can run without a limit.",
+      "use_legacy_costly": "Back to goal loop",
       "wake_instructions": "Instructions for the agent when it wakes",
       "wake_instructions_too_long": "Enter no more than {{max}} characters.",
       "wakes": "Wakes: {{count}}",
@@ -6108,6 +6124,10 @@
       "plainDiff": {
         "description": "Render diffs as plain unified-diff text instead of syntax-highlighted colour. Uses less memory on large diffs.",
         "label": "Plain diffs"
+      },
+      "diffLayout": {
+        "description": "Show old and new code in two columns; off shows one unified column. Changing it here or on any diff sets it everywhere.",
+        "label": "Split (side-by-side) diffs"
       }
     },
     "display": {
@@ -6335,6 +6355,10 @@
   },
   "store": {
     "chatSlice": {
+      "session_gone_open_failed": "The session you clicked was deleted and cannot be opened.",
+      "session_open_error_named": "“{{name}}” could not be opened.",
+      "session_open_error": "The session could not be opened.",
+      "session_gone_open_failed_named": "“{{name}}” was deleted and cannot be opened.",
       "truncated": "…(truncated)"
     }
   },

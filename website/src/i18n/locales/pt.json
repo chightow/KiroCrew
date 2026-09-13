@@ -2903,6 +2903,8 @@
         "cancel": "Cancelar",
         "chatEmpty": "Ainda não foi enviado nada para {{name}}.",
         "diagramFrameTitle": "Diagrama de {{name}}",
+        "discardDraft": "Descartar as alterações não salvas",
+        "discardDraftHint": "As alterações não salvas serão excluídas permanentemente.",
         "edit": "Editar esta saída",
         "edited": "Editado",
         "editorLabel": "Saída de {{name}}, editável",
@@ -2911,8 +2913,9 @@
         "mute": "Silenciar {{name}}",
         "mutedHint": "Não está a ouvir a reunião",
         "revert": "Descartar minhas edições",
-        "revertHint": "Descartar minhas edições e mostrar o que {{name}} escreveu",
+        "revertHint": "Excluir permanentemente minhas edições e mostrar o que {{name}} escreveu",
         "save": "Salvar",
+        "saving": "Salvando…",
         "send": "Enviar",
         "showChat": "Mostrar a conversa",
         "showOutput": "Mostrar o resultado",
@@ -2921,7 +2924,10 @@
       },
       "broadcastBar": {
         "heard": "Ouvido: {{text}}",
+        "pausedPlaceholder": "Agentes pausados — retome para enviar",
+        "pausingPlaceholder": "Pausando — envio indisponível",
         "placeholder": "Diga algo a todos os agentes à escuta…",
+        "resumingPlaceholder": "Retomando — o envio estará disponível em breve",
         "send": "Enviar"
       },
       "list": {
@@ -2973,6 +2979,7 @@
         "back": "Voltar",
         "endAndReview": "Terminar e revisar",
         "ended": "Terminada",
+        "endingReview": "Encerrando — preparando a revisão…",
         "live": "Em direto",
         "loadFailed": "Não foi possível abrir esta reunião",
         "moreActions": "Mais ações",
@@ -2980,8 +2987,10 @@
         "noAgentsHint": "Ative um na barra acima, ou escolha uma predefinição.",
         "pause": "Pausar",
         "paused": "Em pausa",
+        "pausing": "Pausando…",
         "refresh": "Atualizar",
         "restart": "Reiniciar",
+        "resuming": "Retomando…",
         "retryAgents": "Tentar de novo",
         "start": "Começar",
         "toggleTasks": "Tarefas",
@@ -3116,6 +3125,7 @@
       "transcript": {
         "empty": "Ainda não há transcrição",
         "emptyHintLive": "A fala finalizada aparecerá aqui à medida que a reunião avança.",
+        "emptyHintPaused": "Pausado — a fala aparecerá aqui após retomar.",
         "emptyHintRecorded": "Nenhuma transcrição foi gravada para esta reunião.",
         "full": "A transcrição está cheia. Novas falas e transmissões não serão mais gravadas nem enviadas aos agentes.",
         "jumpToLatest": "Ir para o mais recente",
@@ -4461,7 +4471,7 @@
         "creating": "Criando",
         "directly_under_the_root": "Diretamente sob a raiz",
         "inside_name": "Dentro de {{name}}",
-        "n_already_existed": "{{n}} já existiam",
+        "n_already_set_up": "{{n}} já configuradas",
         "n_created": "{{n}} criadas",
         "n_failed": "{{n}} com falha",
         "n_possible_sub_folders_inside_packages_above": "{{n}} subpastas possíveis nos pacotes acima",
@@ -4475,6 +4485,7 @@
         "project_directory": "Diretório do projeto",
         "re_scan": "Analisar de novo",
         "results": "Resultados",
+        "root_already_exists_nothing_to_create": "Este diretório já tem a sua pasta da barra lateral, portanto não resta nada para criar.",
         "root_changed_scan_before_creating": "O diretório acima mudou — escaneie-o antes de criar pastas.",
         "scan": "Analisar",
         "scan_a_project_directory_then_create_a_sidebar": "Analise um diretório de projeto e crie uma pasta da barra lateral para cada subprojeto que escolher.",
@@ -8399,11 +8410,11 @@
       "pull_request_url": "URL da solicitação de pull",
       "pull_request_url_placeholder": "por ex. https://github.com/org/repo/pull/123…",
       "request_failed": "A solicitação do monitor falhou. Tente novamente.",
-      "session_mode_unavailable": "Os monitores não estão disponíveis em sessões de equipe ou de membro porque essas sessões encaminham o trabalho pela equipe.",
+      "session_mode_unavailable": "As automações não estão disponíveis em sessões de equipe ou de membro porque essas sessões roteiam o trabalho por meio de sua equipe.",
       "restart_monitor": "Reiniciar monitor",
       "review_ready": "Pronta para revisão",
       "save_changes": "Salvar alterações",
-      "set_up_bounded_monitor": "Configurar um monitor limitado",
+      "set_up_bounded_monitor": "Monitorar uma solicitação de pull em vez disso",
       "sidebar_status": "Monitor · {{status}}",
       "start_monitor": "Iniciar monitor",
       "statuses": {
@@ -8422,9 +8433,8 @@
       "title": "Monitor limitado de solicitação de pull",
       "tokens": "Tokens: {{count}}",
       "unknown": "Desconhecido",
-      "back_to_bounded_monitor": "Voltar ao monitor limitado",
-      "legacy_notice": "Este ciclo antigo invoca o agente a cada ciclo e pode ser executado sem limite.",
-      "use_legacy_costly": "Usar o ciclo de objetivo antigo (caro)",
+      "legacy_notice": "Este ciclo de meta invoca o agente a cada ciclo e pode ser executado sem limite.",
+      "use_legacy_costly": "Voltar ao ciclo de meta",
       "wake_instructions": "Instruções para o agente quando ele for ativado",
       "wake_instructions_too_long": "Insira no máximo {{max}} caracteres.",
       "wakes": "Acionamentos: {{count}}",
@@ -12100,6 +12110,7 @@
         "no_matching_entries": "Nenhuma entrada correspondente",
         "no_semantic_entries": "Nenhuma entrada semântica",
         "of": "de",
+        "open_embedding_model_settings": "Abrir as configurações do modelo de embeddings",
         "preview": "Visualizar",
         "preview_what_gets_injected_into_prompts_enter_a": "Visualize o que é injetado nos prompts. Digite uma consulta para ver os resultados da recuperação episódica.",
         "ready": "Pronto!",
@@ -14908,6 +14919,10 @@
       "plainDiff": {
         "description": "Exibe os diffs como texto unified diff sem realce de sintaxe. Usa menos memória em diffs grandes.",
         "label": "Diffs em texto simples"
+      },
+      "diffLayout": {
+        "description": "Mostra o código antigo e o novo em duas colunas; desativado mostra uma única coluna unificada. Alterá-lo aqui ou em qualquer diff aplica em todos os lugares.",
+        "label": "Diffs divididos (lado a lado)"
       }
     },
     "display": {
@@ -15045,6 +15060,10 @@
   },
   "store": {
     "chatSlice": {
+      "session_gone_open_failed": "A sessão em que você clicou foi excluída e não pode ser aberta.",
+      "session_open_error_named": "Não foi possível abrir “{{name}}”.",
+      "session_open_error": "Não foi possível abrir a sessão.",
+      "session_gone_open_failed_named": "“{{name}}” foi excluída e não pode ser aberta.",
       "truncated": "…(truncado)"
     }
   },

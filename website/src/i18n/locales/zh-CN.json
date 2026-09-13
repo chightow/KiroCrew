@@ -2791,6 +2791,8 @@
         "cancel": "取消",
         "chatEmpty": "还没有向 {{name}} 发送任何内容。",
         "diagramFrameTitle": "{{name}} 的图示",
+        "discardDraft": "放弃未保存的更改",
+        "discardDraftHint": "未保存的更改将被永久删除。",
         "edit": "编辑此输出",
         "edited": "已编辑",
         "editorLabel": "{{name}} 的输出，可编辑",
@@ -2799,8 +2801,9 @@
         "mute": "静音 {{name}}",
         "mutedHint": "未在聆听会议",
         "revert": "放弃我的修改",
-        "revertHint": "放弃我的修改，显示 {{name}} 写的内容",
+        "revertHint": "永久删除我的修改，显示 {{name}} 写的内容",
         "save": "保存",
+        "saving": "保存中…",
         "send": "发送",
         "showChat": "显示对话",
         "showOutput": "显示输出",
@@ -2809,7 +2812,10 @@
       },
       "broadcastBar": {
         "heard": "听到：{{text}}",
+        "pausedPlaceholder": "助手已暂停 — 继续后才能发送",
+        "pausingPlaceholder": "正在暂停 — 暂时无法发送",
         "placeholder": "对所有正在聆听的代理说点什么……",
+        "resumingPlaceholder": "正在继续 — 马上就能发送",
         "send": "发送"
       },
       "list": {
@@ -2859,6 +2865,7 @@
         "back": "返回",
         "endAndReview": "结束并复核",
         "ended": "已结束",
+        "endingReview": "正在结束 — 准备审阅…",
         "live": "进行中",
         "loadFailed": "无法打开这场会议",
         "moreActions": "更多操作",
@@ -2866,8 +2873,10 @@
         "noAgentsHint": "在上方栏中启用一个，或选择一个预设。",
         "pause": "暂停",
         "paused": "已暂停",
+        "pausing": "正在暂停…",
         "refresh": "刷新",
         "restart": "重新开始",
+        "resuming": "正在继续…",
         "retryAgents": "重试",
         "start": "开始",
         "toggleTasks": "行动项",
@@ -2996,6 +3005,7 @@
       "transcript": {
         "empty": "暂无转录",
         "emptyHintLive": "随着会议进行，最终确认的语音内容会显示在这里。",
+        "emptyHintPaused": "已暂停 — 继续后语音将显示在这里。",
         "emptyHintRecorded": "这场会议没有记录转录。",
         "full": "转录已满。新的语音和广播将不再被记录或发送给代理。",
         "jumpToLatest": "跳到最新内容",
@@ -4309,7 +4319,7 @@
         "creating": "正在创建",
         "directly_under_the_root": "直接位于根目录下",
         "inside_name": "位于 {{name}} 内",
-        "n_already_existed": "{{n}} 个已存在",
+        "n_already_set_up": "{{n}} 个已设置",
         "n_created": "已创建 {{n}} 个",
         "n_failed": "{{n}} 个失败",
         "n_possible_sub_folders_inside_packages_above": "上方软件包内有 {{n}} 个可能的子文件夹",
@@ -4323,6 +4333,7 @@
         "project_directory": "项目目录",
         "re_scan": "重新扫描",
         "results": "结果",
+        "root_already_exists_nothing_to_create": "该目录已有对应的侧边栏文件夹，没有可创建的内容。",
         "root_changed_scan_before_creating": "上方目录已更改 — 创建文件夹前请先扫描。",
         "scan": "扫描",
         "scan_a_project_directory_then_create_a_sidebar": "扫描一个项目目录，然后为你选择的每个子项目创建一个侧边栏文件夹。",
@@ -8171,11 +8182,11 @@
       "pull_request_url": "拉取请求 URL",
       "pull_request_url_placeholder": "例如 https://github.com/org/repo/pull/123…",
       "request_failed": "监控请求失败，请重试。",
-      "session_mode_unavailable": "群组或成员会话不支持监控，因为这些会话通过其群组路由工作。",
+      "session_mode_unavailable": "群组会话和成员会话不支持自动化，因为这些会话的工作会通过其群组转发。",
       "restart_monitor": "重启监控",
       "review_ready": "可供评审",
       "save_changes": "保存更改",
-      "set_up_bounded_monitor": "设置有界监控",
+      "set_up_bounded_monitor": "改为监控拉取请求",
       "sidebar_status": "监控 · {{status}}",
       "start_monitor": "启动监控",
       "statuses": {
@@ -8194,9 +8205,8 @@
       "title": "有界拉取请求监控",
       "tokens": "令牌数：{{count}}",
       "unknown": "未知",
-      "back_to_bounded_monitor": "返回有界监控",
-      "legacy_notice": "此旧版循环会在每个周期调用代理，并且可能无限期运行。",
-      "use_legacy_costly": "使用旧版目标循环（成本高）",
+      "legacy_notice": "此目标循环会在每个周期调用代理，并且可能无限期运行。",
+      "use_legacy_costly": "返回目标循环",
       "wake_instructions": "代理唤醒时的指令",
       "wake_instructions_too_long": "请输入不超过 {{max}} 个字符。",
       "wakes": "唤醒次数：{{count}}",
@@ -11764,6 +11774,7 @@
         "no_matching_entries": "无匹配记录",
         "no_semantic_entries": "无语义记录",
         "of": "/",
+        "open_embedding_model_settings": "打开嵌入模型设置",
         "preview": "预览",
         "preview_what_gets_injected_into_prompts_enter_a": "预览会注入提示词的内容。输入查询即可查看情景检索结果。",
         "ready": "就绪！",
@@ -14524,6 +14535,10 @@
       "plainDiff": {
         "description": "以普通 unified diff 文本显示差异，不使用语法高亮着色。在大型差异上占用更少内存。",
         "label": "纯文本 diff"
+      },
+      "diffLayout": {
+        "description": "分两栏显示旧代码和新代码；关闭则显示单栏统一视图。在这里或在任意差异上更改，都会应用到各处。",
+        "label": "拆分（并排）差异"
       }
     },
     "display": {
@@ -14661,6 +14676,10 @@
   },
   "store": {
     "chatSlice": {
+      "session_gone_open_failed": "你点击的会话已被删除，无法打开。",
+      "session_open_error_named": "无法打开“{{name}}”。",
+      "session_open_error": "无法打开该会话。",
+      "session_gone_open_failed_named": "“{{name}}”已被删除，无法打开。",
       "truncated": "…（已截断）"
     }
   },
