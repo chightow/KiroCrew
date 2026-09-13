@@ -179,12 +179,11 @@ def test_membership_is_unchanged_by_the_move() -> None:
         {ACP_BACKEND_CLAUDE, ACP_BACKEND_CODEX, ACP_BACKEND_OPENCODE, ACP_BACKEND_PI}
     )
     assert ACP_BACKENDS_SEED_LOCAL_SETTINGS == frozenset({ACP_BACKEND_CLAUDE})
-    # The BYO-auth seam starts EMPTY on main: pi -- the first intended member --
-    # joins it on the ``feat/pi-acp-selectable`` side together with its
-    # ``ACP_BACKENDS_KNOWN`` registration (H8: every member must be a recognized
-    # id). A member added here without that registration fails the subset pin
-    # above; update this pin when pi joins, in the slice's membership-test style.
-    assert ACP_BACKENDS_BYO_AUTH == frozenset()
+    # The BYO-auth seam carries pi, joined with its ``ACP_BACKENDS_KNOWN``
+    # registration (H8: every member must be a recognized id). A member added
+    # without that registration fails the subset pin above; one added without
+    # demonstrating its own-credential property fails its leaf test instead.
+    assert ACP_BACKENDS_BYO_AUTH == frozenset({ACP_BACKEND_PI})
 
 
 def test_model_registry_namespace_maps_every_known_backend() -> None:

@@ -15,11 +15,10 @@ style of the pi parity slices:
 * (a) the pi path works with no Kiro identity present — a BYO-auth member that
   is still selectable skips the Kiro readiness gates;
 * (b) the kiro/KAS paths still demand it — every current backend, every
-  unresolvable value, and a member denied back to kiro stay gated.
+  unresolvable value, and a member without seam membership stay gated.
 
-Fail closed throughout: with the seam empty (its main state) nothing bypasses,
-and a member that stops resolving to itself (governance denial, unregistered
-build) degrades to kiro and stays gated with it.
+Fail closed throughout: without seam membership nothing bypasses, and a
+member that stops resolving to itself gates again with the rest.
 """
 
 from __future__ import annotations
@@ -103,14 +102,15 @@ def test_current_and_unresolvable_backends_stay_gated(backend: object) -> None:
     assert bypasses_kiro_signin_gate(backend) is False
 
 
-def test_pi_stays_gated_while_unselectable(_byo_pi: str) -> None:
-    """Fail closed: membership alone bypasses nothing.
+def test_registration_alone_bypasses_nothing(monkeypatch) -> None:
+    """Fail closed: seam membership IS the bypass, registration is not.
 
-    On main pi is neither registered nor selectable, so even as a seam member
-    it degrades to kiro at session start -- and that turn needs Kiro sign-in.
-    The bypass fires only once the parity side's registration lands.
+    pi is registered selectable and the default on this main, yet with the
+    seam empty its turns still demand Kiro sign-in -- the parity-side
+    registration alone must never unlock the gate.
     """
-    assert bypasses_kiro_signin_gate(_byo_pi) is False
+    monkeypatch.setattr(sdk_backends, "ACP_BACKENDS_BYO_AUTH", frozenset())
+    assert bypasses_kiro_signin_gate(_PI) is False
 
 
 def test_pi_bypasses_once_member_and_selectable(_byo_pi: str, _selectable_pi: None) -> None:
@@ -118,16 +118,18 @@ def test_pi_bypasses_once_member_and_selectable(_byo_pi: str, _selectable_pi: No
     assert bypasses_kiro_signin_gate(_byo_pi) is True
 
 
-def test_pi_stays_gated_when_denied_back_to_kiro(_byo_pi: str) -> None:
-    """Fail closed: a governance-denied member degrades to kiro, so it gates.
+def test_denial_cannot_unseat_the_floor_member(_byo_pi: str) -> None:
+    """The floor outvotes a denial: a denied pi still resolves to pi.
 
     ``apply_selectable_denials`` recomputes the selectable set as
-    ``baseline - denied``; a denied pi resolves to kiro, and the turn that
-    starts there needs Kiro sign-in. Membership must not outvote selectability.
+    ``baseline - denied``, but ``resolve_selected_backend`` then falls through
+    to the default -- which IS pi on this main. Denying it must not turn the
+    session into something that suddenly needs Kiro sign-in; the floor
+    guarantees this configuration cannot be removed.
     """
     sdk_backends.apply_selectable_denials({_PI})
     try:
-        assert bypasses_kiro_signin_gate(_byo_pi) is False
+        assert bypasses_kiro_signin_gate(_byo_pi) is True
     finally:
         sdk_backends.apply_selectable_denials(set())
 
@@ -194,9 +196,10 @@ async def test_helper_bypasses_member_pi_session(
 
 
 @pytest.mark.asyncio
-async def test_helper_stays_gated_for_denied_member_backend(_config, _byo_pi: str) -> None:
-    """Fail closed: a member backend denied back to kiro keeps the gate."""
-    _config(default="", member=_byo_pi)
+async def test_helper_stays_gated_without_seam_membership(_config, monkeypatch) -> None:
+    """Fail closed: with the seam empty the member arm keeps the gate."""
+    monkeypatch.setattr(sdk_backends, "ACP_BACKENDS_BYO_AUTH", frozenset())
+    _config(default="", member=_PI)
     assert await kiro_readiness.session_bypasses_kiro_readiness("member-x") is False
 
 

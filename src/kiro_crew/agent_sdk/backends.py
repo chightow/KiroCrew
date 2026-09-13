@@ -902,15 +902,15 @@ ACP_BACKENDS_HOST_AUTH_CALLBACK = frozenset({ACP_BACKEND_KAS})
 # OpenAI-compat endpoint consult :func:`bypasses_kiro_signin_gate` before
 # calling ``reject_if_kiro_unverified``.
 #
-# EMPTY on main: pi -- the first intended member -- is registered selectable
-# on the ``feat/pi-acp-selectable`` side (which also adds it to
-# ``ACP_BACKENDS_KNOWN``, as harness-parity H8 requires of every member), and
-# joins this set there. Other self-authenticating backends join later, each by
+# pi is the first member: it is registered selectable, the default, and named
+# in ``ACP_BACKENDS_KNOWN`` on this main (harness-parity H8 requires it of
+# every member). Other self-authenticating backends join later, each by
 # demonstrating the property (own credential store, no Kiro-identity
 # dependency) -- never by the absence of another harness (harness-parity H6).
-# An empty set fails closed by construction: with no member, every backend
-# keeps every existing requirement.
-ACP_BACKENDS_BYO_AUTH: FrozenSet[str] = frozenset()
+# Membership is the bypass: an empty set fails closed by construction -- with
+# no member every backend keeps every existing requirement, and a member that
+# stops resolving to itself gates again with the rest.
+ACP_BACKENDS_BYO_AUTH: FrozenSet[str] = frozenset({ACP_BACKEND_PI})
 
 
 def bypasses_kiro_signin_gate(value: object) -> bool:
