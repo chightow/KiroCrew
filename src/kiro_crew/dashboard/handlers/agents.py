@@ -25,6 +25,7 @@ from kiro_crew.acp.client import advertised_model_ids, model_is_unusable
 from kiro_crew.acp_backends import (
     ACP_BACKEND_CLAUDE,
     ACP_BACKEND_CODEX,
+    ACP_BACKEND_PI,
     model_registry_namespace,
     selectable_backend_values,
 )
@@ -2124,6 +2125,73 @@ def _codex_models(request: web.Request, configured_default: str = "") -> list[di
     return rows
 
 
+def _pi_models(request: web.Request, configured_default: str = "") -> list[dict]:
+    """Assemble the pi model dropdown from what pi-acp itself advertises.
+
+    pi-acp has no static catalog on our side: the registry carries no pi
+    namespace, and kiro-cli's ``--list-models`` names models pi refuses --
+    a stale kiro pin pushed at startup dies as ``AcpModelUnavailable``
+    (``Invalid value for config option model``) instead of running. The ONLY
+    ids ``session/set_config_option("model")`` accepts are the ``provider/id``
+    pairs the adapter advertised as its ``model`` select on ``session/new``,
+    so those are the only rows offered.
+
+    Source order mirrors the codex picker: a live PI session's advertised
+    list first (the namespace-selected read :func:`_advertised_cc_models`
+    does, so a retained claude or codex session cannot answer with ids pi
+    refuses -- both hold the same capability, only ``model_id_namespace``
+    tells them apart), then the cross-session cache that
+    :meth:`AcpClient._capture_available_models` fed on the last pi
+    ``session/new`` -- so a cold dashboard after a restart still offers the
+    real list instead of nothing. Both empty means no pi session has ever
+    started on this install; the picker then offers ``auto`` alone, and the
+    frontend refetches on the next session spawn.
+
+    ``auto`` always leads: it means "inherit pi's own default" and is never an
+    entitlement question. The configured default is resurrected only when nothing
+    is known -- force-including a pin the adapter did not advertise would put back
+    the exact row that kills the session.
+    """
+    pi_namespace = model_registry_namespace(ACP_BACKEND_PI)
+    advertised = _advertised_cc_models(request, pi_namespace)
+    if not advertised:
+        cached = model_registry.advertised_models(pi_namespace)
+        advertised = [{"model_name": m, "display_name": m, "description": ""} for m in cached]
+
+    rows: list[dict] = [
+        {"model_name": "auto", "display_name": "Auto", "description": "Backend default"}
+    ]
+    seen: set[str] = {"auto"}
+    for entry in advertised:
+        name = str(entry.get("model_name", "") or "").strip()
+        if not name or _normalize_model_key(name) == "auto" or name in seen:
+            continue
+        seen.add(name)
+        rows.append(
+            {
+                "model_name": name,
+                "display_name": entry.get("display_name") or name,
+                "description": entry.get("description", ""),
+            }
+        )
+    default = (configured_default or "").strip()
+    if (
+        default
+        and _normalize_model_key(default) != "auto"
+        and default not in seen
+        and not advertised
+    ):
+        rows.insert(
+            1, {"model_name": default, "display_name": default, "description": "Configured default"}
+        )
+    for entry in rows:
+        entry["context_window"] = (
+            model_registry.model_window(entry["model_name"])
+            or model_registry.REFERENCE_WINDOW_TOKENS
+        )
+    return rows
+
+
 def _wrap_list_models_argv(argv: list[str]) -> tuple[list[str], str | None]:
     """Sandbox-wrap the ``--list-models`` argv at the configured tier.
 
@@ -2147,7 +2215,7 @@ async def api_models(request: web.Request) -> web.Response:
     """GET /api/models — the model list for the configured backend.
 
     kiro-family backends read kiro-cli's ``--list-models`` catalog (narrowed to a
-    live session's entitlement); claude and codex read what their adapter
+    live session's entitlement); claude, codex and pi read what their adapter
     advertised, because neither accepts an id from that catalog.
     """
     cfg = await asyncio.to_thread(KiroCrewConfig.load)
@@ -2156,6 +2224,8 @@ async def api_models(request: web.Request) -> web.Response:
         return web.json_response(_cc_models(request, configured_default=cfg.agent.model))
     if backend == ACP_BACKEND_CODEX:
         return web.json_response(_codex_models(request, configured_default=cfg.agent.model))
+    if backend == ACP_BACKEND_PI:
+        return web.json_response(_pi_models(request, configured_default=cfg.agent.model))
     # Signed-out gateways must never reach the spawn below. kiro-cli auto-opens
     # an interactive browser login for ANY subcommand run unauthenticated
     # (--no-interactive does not suppress it, and there is no opt-out env var),
