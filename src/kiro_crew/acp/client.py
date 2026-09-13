@@ -4137,7 +4137,9 @@ class AcpClient:
         just applied: when Crew does not own the session's native permission
         file, the whole array was withheld, and quietly appending a
         session-control server there would hand a pre-approvable surface exactly
-        the tools the withhold exists to keep off it.
+        the tools the withhold exists to keep off it. A SESSION_CONFIG member
+        (pi) carries no permission file by design, so its array is delivered and
+        its precondition is the enforced mode option instead -- see below.
         """
         if self.backend not in ACP_BACKENDS_MEMBER_DISPATCH:
             return servers
@@ -4147,7 +4149,18 @@ class AcpClient:
         if not is_member_session_key(self._session_key):
             return servers
         session_key = self._session_key or ""
-        if not getattr(self, "_claude_settings_authored", False):
+        # SEEDED_SETTINGS backends prove Crew owns the surface with the authored
+        # flag; a SESSION_CONFIG member has no permission file, so the flag can
+        # never be true for it and gating it here would keep every such member on
+        # plain chat forever. Its governance is the verified mode option:
+        # ``_initialize_session`` applies it before the first prompt and refuses
+        # the session otherwise, so a mounted verb either asks or has no session
+        # to run in. Mechanism, not identity (harness-parity H6): of today's
+        # MEMBER_DISPATCH members only pi routes this way, and a member on any
+        # other routing still needs the flag.
+        if not getattr(self, "_claude_settings_authored", False) and (
+            acp_tool_gate.routing_for(self.backend) is not acp_tool_gate.Routing.SESSION_CONFIG
+        ):
             logger.warning(
                 "member session %s: permission surface not Crew-owned — session "
                 "control is not mounted; the DM thread runs as plain chat",

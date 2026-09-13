@@ -522,7 +522,13 @@ ACP_BACKENDS_SESSION_SHARING = frozenset({ACP_BACKEND_KIRO})
 # opencode is excluded on the evidence in ``ACP_BACKENDS_SESSION_MCP_ARRAY``: it
 # advertises http and sse MCP transports only, so there is no per-session mount for
 # a member dispatch to ride on.
-ACP_BACKENDS_MEMBER_DISPATCH = frozenset({ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS})
+#
+# pi is a member on slice-11 evidence: the ``kirocrew-dashboard`` session entry rides
+# the slice-4 bridge unchanged (explicit ``type: "stdio"``, byte-identical
+# ``KIROCREW_SESSION_KEY``/``KIROCREW_BOUND_PORT``, ``mcp__kirocrew-dashboard__*``
+# names) with zero adapter changes, and its verbs ASK under the frozen
+# ``mode=read-only`` (pi-acp ``4e04457``, ``test/member-dispatch.mjs``).
+ACP_BACKENDS_MEMBER_DISPATCH = frozenset({ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS, ACP_BACKEND_PI})
 
 # Backends implementing the ``_session/steer`` extension (mid-turn steer). Neither
 # claude-agent-acp nor codex-acp implements it, so a steer sent to either would be

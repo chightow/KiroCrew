@@ -35,6 +35,7 @@ from kiro_crew.acp.types import (
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
+    ACP_BACKEND_PI,
     ACP_BACKENDS_MEMBER_DISPATCH,
 )
 from kiro_crew.members import (
@@ -51,7 +52,9 @@ class TestCapabilitySet:
         """kiro v2 reads its template from disk and exposes no per-session
         channel, so it must never be in the set: a member session on it runs as
         plain chat rather than mounted-and-refused."""
-        assert ACP_BACKENDS_MEMBER_DISPATCH == frozenset({ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS})
+        assert ACP_BACKENDS_MEMBER_DISPATCH == frozenset(
+            {ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS, ACP_BACKEND_PI}
+        )
         assert ACP_BACKEND_KIRO not in ACP_BACKENDS_MEMBER_DISPATCH
         # codex has the per-session mount now (providers/mirrors/codex.py) and its
         # precondition is stronger than claude's, so its exclusion is a scope
@@ -59,6 +62,10 @@ class TestCapabilitySet:
         # codex DM thread is a NEW capability and belongs to whoever decides member
         # threads run on codex at all.
         assert ACP_BACKEND_CODEX not in ACP_BACKENDS_MEMBER_DISPATCH
+        # pi on slice-11 evidence: the kirocrew-dashboard entry rides its
+        # per-session bridge unchanged (tagged stdio, byte-identical env) and its
+        # verbs ASK under read-only (pi-acp `4e04457`, test/member-dispatch.mjs).
+        assert ACP_BACKEND_PI in ACP_BACKENDS_MEMBER_DISPATCH
 
 
 class TestMemberDispatchSessionServer:
@@ -266,6 +273,33 @@ class TestClaudeMemberAppend:
         matches = [e for e in out if e["name"] == MEMBER_DISPATCH_SERVER]
         assert len(matches) == 1
         assert matches[0]["command"] != "old"
+
+
+class _PiClientStub:
+    """A pi member session: SESSION_CONFIG routing, so no settings file ever exists."""
+
+    backend = ACP_BACKEND_PI
+    _session_key = MEMBER_KEY
+    _claude_settings_authored = False
+
+
+class TestPiMemberAppend:
+    def _run(self, stub) -> list[dict]:
+        return AcpClient._append_member_dispatch_server(stub, _base_servers())
+
+    def test_member_session_gains_the_entry_without_a_settings_file(self):
+        """The settings-authored flag is a SEEDED_SETTINGS notion; gating a
+        SESSION_CONFIG member on it would keep every such member on plain chat
+        forever. pi's governance is the verified read-only mode option, so the
+        mount proceeds and the verbs ask."""
+        out = self._run(_PiClientStub())
+        assert [e["name"] for e in out][-1] == MEMBER_DISPATCH_SERVER
+        assert {"name": "KIROCREW_SESSION_KEY", "value": MEMBER_KEY} in out[-1]["env"]
+
+    def test_non_member_session_is_untouched(self):
+        stub = _PiClientStub()
+        stub._session_key = "dashboard_abc123"
+        assert self._run(stub) == _base_servers()
 
 
 class TestRuntimeMemberThreading:
