@@ -36,9 +36,11 @@ from kiro_crew.acp.types import (
     ACP_BACKEND_PI,
     ACP_BACKENDS_ACP_RUNTIME,
     ACP_BACKENDS_COMPACT,
+    ACP_BACKENDS_HARNESS_OWNED_SESSIONS,
     ACP_BACKENDS_HOST_AUTH_CALLBACK,
     ACP_BACKENDS_INTERNAL_SANDBOX,
     ACP_BACKENDS_KNOWN,
+    ACP_BACKENDS_LOAD_WITHOUT_MODES,
     ACP_BACKENDS_SESSION_SHARING,
     ACP_BACKENDS_STEER,
     ACP_BACKENDS_STRUCTURED_REFUSAL,
@@ -255,6 +257,22 @@ def test_steer_is_opt_in() -> None:
     # pi on slice-7 evidence: the adapter implements `_session/steer` with the
     # kiro notification dialect (queued/consumed), pinned by the steer corpus.
     assert ACP_BACKEND_PI in ACP_BACKENDS_STEER
+
+
+def test_load_adoption_is_opt_in() -> None:
+    """H6: resuming without a kiro transcript, and adopting a modeless load, are membership."""
+    body = inspect.getsource(acp_client.AcpClient._initialize_session)
+    assert "self.backend in ACP_BACKENDS_HARNESS_OWNED_SESSIONS" in body
+    assert '"modes" in load_resp or self.backend in ACP_BACKENDS_LOAD_WITHOUT_MODES' in body
+    # pi on slice-10 evidence: it keeps its own session records (pi-acp `e759cb8`,
+    # file-backed `ses_pi_N` transcripts), so the kiro-transcript pre-check would never
+    # pass for it -- without the first membership Crew never attempts a load and every
+    # reopened slot silently starts fresh. Its successful `session/load` result carries
+    # `configOptions` and no `modes` block, pinned by the session-load corpus -- without
+    # the second membership adoption falls through to `session/new` and discards the
+    # conversation the harness had just restored.
+    assert ACP_BACKEND_PI in ACP_BACKENDS_HARNESS_OWNED_SESSIONS
+    assert ACP_BACKEND_PI in ACP_BACKENDS_LOAD_WITHOUT_MODES
 
 
 def test_mcp_config_hot_reload_is_opt_in() -> None:
