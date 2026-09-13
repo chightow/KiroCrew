@@ -1,0 +1,103 @@
+[
+  {
+    "config_options": [
+      {
+        "category": "model",
+        "currentValue": "muse-spark-1.3-contributor",
+        "id": "model",
+        "name": "Model",
+        "options": [
+          {
+            "name": "muse-spark-1.3-contributor",
+            "value": "muse-spark-1.3-contributor"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "category": "mode",
+        "currentValue": "read-only",
+        "id": "mode",
+        "name": "Session Mode",
+        "options": [
+          {
+            "description": "Every tool call asks KiroCrew for permission.",
+            "name": "read-only",
+            "value": "read-only"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "category": "effort",
+        "currentValue": "xhigh",
+        "description": "Reasoning depth for this model",
+        "id": "effort",
+        "name": "Effort",
+        "options": [
+          {
+            "name": "Low",
+            "value": "low"
+          },
+          {
+            "name": "Medium",
+            "value": "medium"
+          },
+          {
+            "name": "High",
+            "value": "high"
+          },
+          {
+            "name": "Xhigh",
+            "value": "xhigh"
+          },
+          {
+            "name": "Max",
+            "value": "max"
+          }
+        ],
+        "type": "select"
+      }
+    ],
+    "frame": "response",
+    "id": 2,
+    "session_id": "ses_pi_1"
+  },
+  {
+    "action": "update",
+    "events": [
+      {
+        "kind": "text_chunk",
+        "text": "BLUEBIRD"
+      }
+    ],
+    "frame": "session/update",
+    "session_update": "agent_message_chunk",
+    "text_chunk": {
+      "text": "BLUEBIRD",
+      "thinking": false
+    }
+  },
+  {
+    "action": "update",
+    "events": [],
+    "frame": "session/update",
+    "session_update": "usage_update",
+    "usage": [
+      8384,
+      1048576
+    ],
+    "usage_cost": 0.000104586
+  },
+  {
+    "frame": "response",
+    "id": 3,
+    "prompt_tokens": [
+      292,
+      299,
+      7793,
+      0
+    ],
+    "stop_reason": "end_turn"
+  }
+]

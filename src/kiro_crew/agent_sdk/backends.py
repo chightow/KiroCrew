@@ -903,7 +903,16 @@ ACP_BACKENDS_HARNESS_OWNED_SESSIONS = frozenset(
 # successful load. Without membership a reopened session would load, fail the
 # ``modes`` check, fall through to ``session/new`` and discard the conversation the
 # harness had just restored.
-ACP_BACKENDS_LOAD_WITHOUT_MODES = frozenset({ACP_BACKEND_OPENCODE})
+#
+# pi joins on slice-10 evidence: its ``session/load`` answers the same envelope as
+# ``session/new`` (the requested sessionId, model+mode+effort ``configOptions``) and
+# likewise carries no ``modes`` block -- OBSERVED, in
+# ``test/fixtures/acp_frames/pi/session-load.jsonl``, where a second adapter process
+# loaded a session the first had created and the follow-up turn answered with the
+# secret word the first turn established (pi-acp ``e759cb8``, two-process
+# ``test/load.mjs``: secret-word continuity across processes, fail-closed unknown
+# id and cwd mismatch).
+ACP_BACKENDS_LOAD_WITHOUT_MODES = frozenset({ACP_BACKEND_OPENCODE, ACP_BACKEND_PI})
 
 
 # ── How a harness is made to ask ──
