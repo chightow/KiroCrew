@@ -907,10 +907,10 @@ class AgentConfig:
         ),
     )
     acp_backend: str = field(
-        default="",
+        default="pi",
         metadata=_meta(
             "ACP Backend",
-            "Which ACP agent to drive: '' = kiro-cli (default), 'kas' = kiro-agent. "
+            "Which ACP agent to drive: 'pi' (default), '' = kiro-cli, 'kas' = kiro-agent. "
             "KAS runs chat but has no native subagent progress reporting yet.",
             # Deliberately NO ``enum``. A literal here was frozen at import and fed
             # two import-time structures (``JSON_SCHEMA`` and ``SCHEMA_REGISTRY``),

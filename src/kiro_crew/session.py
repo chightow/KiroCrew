@@ -102,7 +102,7 @@ if TYPE_CHECKING:
 from kiro_crew import model_registry, platform_compat, shutdown_event
 from kiro_crew.acp.client import advertised_model_ids, model_is_unusable
 from kiro_crew.acp.types import (
-    ACP_BACKEND_KIRO,
+    ACP_BACKEND_PI,
     ACP_BACKENDS_ACP_RUNTIME,
     PROVIDER_LABEL_CLAUDE,
     PROVIDER_LABEL_DEFAULT,
@@ -1650,7 +1650,7 @@ class SessionManager:
                 background_agent=BACKGROUND_AGENT,
                 heartbeat_key=HEARTBEAT_KEY,
                 runtime_agent=BACKGROUND_AGENT,
-                acp_backend_kiro=ACP_BACKEND_KIRO,
+                acp_backend_default=ACP_BACKEND_PI,
                 bg_recycle_pct=_BG_RECYCLE_PCT,
                 bg_blind_recycle_prompts=_BG_BLIND_RECYCLE_PROMPTS,
                 runtime_backends=lambda: _bg_runtime_backends(),

@@ -1259,13 +1259,13 @@ SCOPE_CATALOG: Dict[str, ScopeSpec] = {
     #
     # ADDITIVE over a floor -- the semantics the selectable-backend design settled on:
     #   {"agent_backend": {"mode": "allow", "allow": ["claude"]}}
-    # means "ALSO allow claude", not "only claude" — ``kiro`` stays selectable
+    # means "ALSO allow claude", not "only claude" — ``pi`` stays selectable
     # because ``acp_backends.GOVERNANCE_FLOOR_BACKEND`` is never submitted to this
     # scope at all. The alternative reading (exclusive) can empty the set, and an
     # install with no startable harness cannot be recovered from the dashboard,
     # since the trust-root policy is the one file it may not write.
     #
-    # Members are POLICY ids, not the code's spelling: ``kiro`` / ``kas`` /
+    # Members are POLICY ids, not the code's spelling: ``pi`` / ``kiro`` / ``kas`` /
     # ``claude`` (see ``acp_backends.POLICY_ID_BY_BACKEND``) — the kiro backend is
     # the empty string internally, which no identifier matcher can carry.
     #

@@ -38,7 +38,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 
 from kiro_crew import platform_compat
-from kiro_crew.acp.types import ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS
+from kiro_crew.acp.types import ACP_BACKEND_CLAUDE, ACP_BACKEND_KAS, ACP_BACKEND_KIRO
 from kiro_crew.config import KiroCrewConfig
 from kiro_crew.messaging.link import UNBIND_REASON_UNSPECIFIED, ChannelLink
 from kiro_crew.session import (
@@ -502,9 +502,10 @@ class TestEvictStaleSession:
 
 
 class TestBackgroundProviderDispatch:
-    def test_an_unreadable_backend_setting_defaults_to_the_kiro_backend(self, mgr) -> None:
-        """``_bg`` must keep working when the config object cannot answer — the
-        alternative is losing chat titles and consolidation to a config edge."""
+    def test_an_unreadable_backend_setting_defaults_to_the_default_backend(self, mgr) -> None:
+        """An unreadable setting degrades to the floor backend for dispatch. The floor
+        is pi, which is not a runtime backend, so ``_bg`` takes the provider path
+        instead of losing chat titles and consolidation to a config edge."""
 
         class _Boom:
             @property
@@ -512,13 +513,14 @@ class TestBackgroundProviderDispatch:
                 raise RuntimeError("config exploded")
 
         mgr._cfg = SimpleNamespace(agent=_Boom())
-        assert mgr._bg_backend_supports_runtime() is True
+        assert mgr._bg_backend_supports_runtime() is False
 
-    def test_a_non_string_backend_defaults_to_the_kiro_backend(self, mgr) -> None:
+    def test_a_non_string_backend_defaults_to_the_default_backend(self, mgr) -> None:
         """A non-string value degrades to the floor backend for dispatch,
-        mirroring the loader's ``_normalize_acp_backend`` posture."""
+        mirroring the loader's ``_normalize_acp_backend`` posture. The floor is pi,
+        which is not a runtime backend, so dispatch takes the provider path."""
         mgr._cfg = SimpleNamespace(agent=SimpleNamespace(acp_backend=object()))
-        assert mgr._bg_backend_supports_runtime() is True
+        assert mgr._bg_backend_supports_runtime() is False
 
     def test_a_runtime_incapable_backend_falls_through_to_the_provider_path(self, mgr) -> None:
         """A backend outside ACP_BACKENDS_ACP_RUNTIME must dispatch to the
@@ -602,6 +604,7 @@ class TestGetBgSessionRespawn:
             pid=11,
             kill=AsyncMock(side_effect=RuntimeError("kill failed")),
         )
+        mgr._cfg.agent.acp_backend = ACP_BACKEND_KIRO
         mgr._bg_runtime = doomed
         handle = await mgr.get_bg_session()
         assert handle.session_id == "sid-fresh"
@@ -616,6 +619,7 @@ class TestGetBgSessionRespawn:
         from kiro_crew.acp.runtime import AcpRuntimeDead
 
         create = AsyncMock(side_effect=AcpRuntimeDead("gone"))
+        mgr._cfg.agent.acp_backend = ACP_BACKEND_KIRO
         mgr._bg_runtime = SimpleNamespace(
             is_alive=lambda: True,
             has_active_sessions=lambda: True,
@@ -642,6 +646,7 @@ class TestGetBgSessionRespawn:
             alive[0] = False
             raise AcpRuntimeDead("died mid-create")
 
+        mgr._cfg.agent.acp_backend = ACP_BACKEND_KIRO
         doomed = SimpleNamespace(
             is_alive=lambda: alive[0],
             has_active_sessions=lambda: True,

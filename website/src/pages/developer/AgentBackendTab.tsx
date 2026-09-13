@@ -17,24 +17,28 @@ import { KIRO_SIGN_IN_BACKEND } from './kiroSignInLink'
 const CONFIG_KEY = 'agent.acp_backend'
 
 /**
- * Backend ids, verbatim from `acp/types.py`. `''` (Kiro CLI) is the shipped
- * default and is a REAL value, not "unset" — the empty string is how the core
- * spells the Kiro backend, so it must round-trip as itself.
+ * Backend ids, verbatim from `acp/types.py`. `'pi'` is the shipped default;
+ * `''` (Kiro CLI) is a REAL value, not "unset" — the empty string is how the
+ * core spells the Kiro backend, so it must round-trip as itself.
  */
 const KIRO = ''
 const CLAUDE = 'claude'
 const KAS = 'kas'
+const PI = 'pi'
 
 /**
- * The agents this frontend has a translated name and an icon for.
+ * The agents this frontend always renders a row for (translated name and icon
+ * where it has one — see `NAME`/`ICON`).
  *
  * A FLOOR for what the panel renders, never a ceiling — see `candidates`. Every id
  * here is a core agent the server always knows, so listing them costs nothing and
  * keeps the control populated while the schema and probe queries are still in
  * flight. An agent absent from this list still gets a row once a server answer
- * names it, labelled with its `policy_id`.
+ * names it, labelled with its `policy_id`. `PI` is listed with no translated
+ * `NAME` entry of its own: it renders under the server's `policy_id` until a
+ * translated name lands, which the `nameOf` fallback below already covers.
  */
-const NAMED = [KIRO, CLAUDE, KAS]
+const NAMED = [KIRO, CLAUDE, KAS, PI]
 
 /**
  * DOM id of the row that states a backend's status.
@@ -208,9 +212,9 @@ export function AgentBackendTab() {
   /**
    * A failed read is NOT the default value.
    *
-   * `?? KIRO` is right for a config that genuinely omits the key — the shipped
-   * default really is Kiro CLI. It is wrong for a read that FAILED: the value is
-   * then unknown, and defaulting paints Kiro CLI as the pressed option, so an
+   * `?? PI` is right for a config that genuinely omits the key — the shipped
+   * default really is pi. It is wrong for a read that FAILED: the value is
+   * then unknown, and defaulting paints pi as the pressed option, so an
    * operator running KAS is shown the wrong agent by a control that looks live.
    * Offer the retry instead of guessing.
    */
@@ -231,7 +235,7 @@ export function AgentBackendTab() {
     )
   }
 
-  const current = cfgQ.data?.agent?.acp_backend ?? KIRO
+  const current = cfgQ.data?.agent?.acp_backend ?? PI
 
   /**
    * `undefined` while the schema is in flight — every option stays enabled rather
@@ -283,8 +287,8 @@ export function AgentBackendTab() {
    * the same mistake as disabling one. `current` joins for the same reason: the saved
    * value must always have a chip.
    *
-   * Sorted rather than left in arrival order: the two kiro-family harnesses first —
-   * KIRO because it is the default and the floor, then KAS — and everything else by
+   * Sorted rather than left in arrival order: PI first — it is the default and
+   * the floor — then the two kiro-family harnesses, and everything else by
    * `policy_id`, which is the order the probe endpoint already sorts by. Set iteration
    * order would otherwise follow whichever query resolved first and reshuffle the
    * control between renders.
@@ -297,9 +301,11 @@ export function AgentBackendTab() {
       ...(probeQ.data?.backends ?? []).map(b => b.id),
     ]),
   ).sort((a, b) => {
+    if (a === PI) return -1
+    if (b === PI) return 1
     if (a === KIRO) return -1
     if (b === KIRO) return 1
-    // KAS second, ahead of the byte order below. It is not an adapter: it is kiro-cli's
+    // KAS next, ahead of the byte order below. It is not an adapter: it is kiro-cli's
     // own ACP relay, resolved from the same binary and sharing kiro's install verdict
     // (`_probe_kas` delegates to `_probe_kiro`), so the two harnesses that are really
     // one install belong adjacent at the head of the row. Under `policy_id` alone it
@@ -464,7 +470,7 @@ export function AgentBackendTab() {
    * one line that tells the user what to DO, and it names the command only when the
    * server had one to give. `unknown` follows and must never read as missing; it
    * reports a failed check, not an absent binary. Only then do the pre-existing
-   * default/experimental lines apply. KIRO is the all-supported descriptor, so it gets
+   * default/experimental lines apply. PI is the all-supported descriptor, so it gets
    * that sentence; anything else is not, so it gets `Experimental` rather than a claim.
    */
   const status = (value: string): string => {
@@ -484,7 +490,7 @@ export function AgentBackendTab() {
     // `Experimental` and say nothing about why the option is dead.
     if (row?.restart_required)
       return i18nT('pages.developer.agentBackendTab.installed_restart_required')
-    if (value === KIRO) return i18nT('pages.developer.agentBackendTab.default_all_features_supported')
+    if (value === PI) return i18nT('pages.developer.agentBackendTab.default_all_features_supported')
     return i18nT('pages.developer.agentBackendTab.experimental')
   }
 

@@ -98,10 +98,11 @@ beforeEach(() => {
   patchConfigMock.mockResolvedValue({})
   kirocrewConfigMock.mockClear()
   kirocrewConfigMock.mockResolvedValue({ agent: { acp_backend: '' } })
-  // The shipped core: every known agent is selectable. Claude Code is in the public
-  // baseline because acp/client.py owns its whole spawn path and the adapter it needs
-  // is a public npm package -- the only thing that used to be missing was the switch.
-  schemaMock.mockReturnValue(schemaWith(['', 'claude', 'kas']))
+  // The shipped core: every known agent is selectable, with pi the default.
+  // Claude Code is in the public baseline because acp/client.py owns its whole
+  // spawn path and the adapter it needs is a public npm package -- the only thing
+  // that used to be missing was the switch.
+  schemaMock.mockReturnValue(schemaWith(['', 'claude', 'kas', 'pi']))
   // Default to NO probe information — a 404 from a gateway that predates the
   // endpoint. Every test that does not opt in therefore pins the pre-probe
   // behaviour: schema-only gating, nothing disabled or annotated by the probe.
@@ -110,28 +111,31 @@ beforeEach(() => {
 })
 
 describe('AgentBackendTab', () => {
-  it('offers all three backends', async () => {
+  it('offers all four backends', async () => {
     wrap()
     expect(await screen.findByRole('button', { name: 'Kiro CLI' })).toBeInTheDocument()
     expect(button('Claude Code')).toBeInTheDocument()
     expect(button('KAS (kiro-agent)')).toBeInTheDocument()
+    // pi has no translated NAME entry yet, so it renders under its policy id.
+    expect(button('pi')).toBeInTheDocument()
   })
 
-  it('puts the two kiro-family harnesses first and sorts the adapters after', async () => {
-    // KAS is not an adapter -- it is kiro-cli's own ACP relay, resolved from the same
-    // binary and sharing kiro's install verdict -- so it sits beside Kiro CLI rather
-    // than under 'k' in the byte order, which had landed it behind every adapter whose
-    // id happens to start earlier ('claude', 'codex'). Order is a product decision, so
-    // it is pinned here: a later edit to the comparator cannot quietly restore the
+  it('puts the default first, the kiro-family harnesses next, and sorts the adapters after', async () => {
+    // pi first because it is the default and the floor. KAS is not an adapter --
+    // it is kiro-cli's own ACP relay, resolved from the same binary and sharing
+    // kiro's install verdict -- so it sits beside Kiro CLI rather than under 'k' in
+    // the byte order, which had landed it behind every adapter whose id happens to
+    // start earlier ('claude', 'codex'). Order is a product decision, so it is
+    // pinned here: a later edit to the comparator cannot quietly restore the
     // alphabet.
-    schemaMock.mockReturnValue(schemaWith(['', 'claude', 'kas', 'codex']))
+    schemaMock.mockReturnValue(schemaWith(['', 'claude', 'kas', 'codex', 'pi']))
     acpBackendsMock.mockResolvedValue({
-      backends: [probeRow(''), probeRow('claude'), probeRow('kas'), probeRow('codex')],
+      backends: [probeRow(''), probeRow('claude'), probeRow('kas'), probeRow('codex'), probeRow('pi')],
     })
     wrap()
     await waitFor(() => expect(button('codex')).toBeEnabled())
 
-    const labels = ['Kiro CLI', 'KAS (kiro-agent)', 'Claude Code', 'codex']
+    const labels = ['pi', 'Kiro CLI', 'KAS (kiro-agent)', 'Claude Code', 'codex']
     const rendered = screen
       .getAllByRole('button')
       .map(b => b.textContent?.trim())
@@ -146,12 +150,12 @@ describe('AgentBackendTab', () => {
     expect(button('Kiro CLI')).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('treats a missing acp_backend as kiro-cli rather than as unset', async () => {
-    // `''` is a real backend id, so an absent field must land on Kiro CLI — not
+  it('treats a missing acp_backend as pi rather than as unset', async () => {
+    // The shipped default is pi, so an absent field must land on pi — not
     // leave every option unpressed.
     kirocrewConfigMock.mockResolvedValue({ agent: {} })
     wrap()
-    await waitFor(() => expect(button('Kiro CLI')).toHaveAttribute('aria-pressed', 'true'))
+    await waitFor(() => expect(button('pi')).toHaveAttribute('aria-pressed', 'true'))
   })
 
   it('saves the picked backend to agent.acp_backend', async () => {
@@ -237,21 +241,20 @@ describe('AgentBackendTab', () => {
   it('derives each row status instead of asserting per-agent capabilities', async () => {
     // The status line is one of three derived strings, so a claim this component
     // cannot substantiate ("isolates what it runs in an OS sandbox", "shares one
-    // process across sessions") has nowhere to live. Kiro CLI is the
-    // all-supported descriptor; any other selectable agent is Experimental, not a
-    // feature list.
+    // process across sessions") has nowhere to live. pi carries the default
+    // descriptor; any other selectable agent is Experimental, not a feature list.
     wrap()
     await waitFor(() => expect(button('Kiro CLI')).toBeEnabled())
     expect(screen.getByText('Default. All features supported.')).toBeInTheDocument()
-    expect(screen.getAllByText('Experimental')).toHaveLength(2)
+    expect(screen.getAllByText('Experimental')).toHaveLength(3)
     // No row carries prose beyond those.
     expect(screen.queryByText(/OS sandbox|steered mid-turn|Anthropic/)).not.toBeInTheDocument()
   })
 
   it('offers a retry instead of a false selection when the config read fails', async () => {
-    // `?? KIRO` is correct for a config that omits the key, and wrong for a read
-    // that FAILED: defaulting would paint Kiro CLI as pressed, telling an operator
-    // running KAS that they are on Kiro. The control must not render at all.
+    // `?? PI` is correct for a config that omits the key, and wrong for a read
+    // that FAILED: defaulting would paint pi as pressed, telling an operator
+    // running KAS that they are on pi. The control must not render at all.
     kirocrewConfigMock.mockRejectedValue(new Error('offline'))
     wrap()
     expect(await screen.findByText('Could not load the agent backend.')).toBeInTheDocument()
@@ -294,6 +297,8 @@ describe('AgentBackendTab', () => {
   it('shows a backend the schema starts advertising, with no edit here', async () => {
     // Visibility is off the schema, not a per-agent literal: widening the enum makes
     // the row appear and read as Experimental without touching this component.
+    // (Three, not two: with pi out of the advertised set the Kiro row reads
+    // Experimental too, since the default descriptor follows pi.)
     schemaMock.mockReturnValue(schemaWith(['', 'kas']))
     wrap()
     await waitFor(() => expect(button('Kiro CLI')).toBeEnabled())
@@ -303,7 +308,7 @@ describe('AgentBackendTab', () => {
     schemaMock.mockReturnValue(schemaWith(['', 'claude', 'kas']))
     wrap()
     await waitFor(() => expect(button('Claude Code')).toBeEnabled())
-    expect(screen.getAllByText('Experimental')).toHaveLength(2)
+    expect(screen.getAllByText('Experimental')).toHaveLength(3)
   })
 
   it('does not offer a backend the deployment may not select', async () => {
@@ -374,6 +379,7 @@ describe('AgentBackendTab', () => {
     await waitFor(() => expect(button('Claude Code')).toBeEnabled())
     expect(button('Kiro CLI')).toBeEnabled()
     expect(button('KAS (kiro-agent)')).toBeEnabled()
+    expect(button('pi')).toBeEnabled()
   })
 
   it('surfaces a rejected save', async () => {
@@ -468,7 +474,7 @@ describe('AgentBackendTab', () => {
     expect(button('Claude Code')).toBeEnabled()
     expect(button('KAS (kiro-agent)')).toBeEnabled()
     expect(screen.getByText('Default. All features supported.')).toBeInTheDocument()
-    expect(screen.getAllByText('Experimental')).toHaveLength(2)
+    expect(screen.getAllByText('Experimental')).toHaveLength(3)
     expect(screen.queryByText(/Missing on this machine|Could not check/)).not.toBeInTheDocument()
   })
 
@@ -517,7 +523,7 @@ describe('AgentBackendTab', () => {
     wrap()
     await waitFor(() => expect(button('Kiro CLI')).toBeEnabled())
     expect(screen.getByText('Default. All features supported.')).toBeInTheDocument()
-    expect(screen.getAllByText('Experimental')).toHaveLength(2)
+    expect(screen.getAllByText('Experimental')).toHaveLength(3)
     expect(screen.queryByText(/Missing on this machine|Could not check/)).not.toBeInTheDocument()
     expect(button('KAS (kiro-agent)')).toBeEnabled()
     expect(button('Claude Code')).toBeEnabled()
@@ -760,7 +766,7 @@ describe('AgentBackendTab', () => {
     // The identity the card stores is consumed by the KAS relay alone, so the
     // card lives beside the switch that selects KAS -- not on Settings >
     // Overview, where a sign-in chooser read as a required step to every user.
-    // Offered, not selected: the shipped default is Kiro CLI, and the card must
+    // Offered, not selected: the saved backend here is Kiro CLI, and the card must
     // still be here so the user can sign in BEFORE switching.
     wrap()
     await waitFor(() => expect(button('KAS (kiro-agent)')).toBeEnabled())

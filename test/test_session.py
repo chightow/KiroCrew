@@ -4768,6 +4768,7 @@ class TestGetBgSessionRecycle:
 
     @pytest.mark.asyncio
     async def test_recycles_stale_idle_runtime(self, cfg):
+        cfg.agent.acp_backend = ACP_BACKEND_KIRO  # recycle needs a runtime backend
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
 
         stale = AsyncMock()
@@ -4804,6 +4805,7 @@ class TestGetBgSessionRecycle:
         Staleness is probed with ``_is_stale()`` (age OR RSS), not the age-only
         ``_stale_by_age()``, because RSS is the growth mode that was observed.
         """
+        cfg.agent.acp_backend = ACP_BACKEND_KIRO  # recycle needs a runtime backend
         mgr = SessionManager(cfg, provider_factory=_mock_provider_factory())
 
         stale = AsyncMock()

@@ -72,8 +72,8 @@ def _registered(monkeypatch, *backends):
     ``register_selectable_backend`` does — a test that set only the effective set
     would leave the recompute iterating an empty baseline and removing everything.
 
-    The public baseline is ``{"", "kas"}``; a test about claude must widen it or it
-    would be asserting the registry's absence rather than the policy's decision.
+    The public baseline serves every known backend; a test pins its own premise here
+    rather than asserting the registry's absence when it means the policy's decision.
     """
     monkeypatch.setattr(acp_backends, "_baseline", set(backends))
     monkeypatch.setattr(acp_backends, "_selectable", set(backends))
@@ -85,11 +85,12 @@ class TestScopeRegistration:
         # permits() call below would answer from a default, not the rule under test.
         assert "agent_backend" in SCOPE_CATALOG
 
-    def test_kiro_has_a_policy_spelling_that_is_not_the_empty_string(self):
+    def test_pi_has_a_policy_spelling_that_is_not_the_empty_string(self):
         # An identifier matcher cannot carry "", and a blank allow/deny entry is
-        # indistinguishable from a typo, so the wire name has to differ.
-        assert FLOOR == ""
-        assert acp_backends.POLICY_ID_BY_BACKEND[FLOOR] == "kiro"
+        # indistinguishable from a typo, so the wire name has to differ. The floor
+        # is pi, whose code spelling is already a non-empty id.
+        assert FLOOR == "pi"
+        assert acp_backends.POLICY_ID_BY_BACKEND[FLOOR] == "pi"
 
     def test_every_known_backend_has_a_policy_id(self):
         # A backend with no wire spelling could never be named in a rule, so it would
@@ -364,7 +365,7 @@ class TestNoSecondGate:
         _registered(monkeypatch, FLOOR, "kas", "claude")
         _install(_policy({"mode": "deny", "deny": ["claude"]}))
         abg.narrow_selectable_backends()
-        assert core_mod._selectable_acp_backends() == [FLOOR, "kas"]
+        assert core_mod._selectable_acp_backends() == sorted([FLOOR, "kas"])
 
     def test_the_single_gate_degrades_a_policy_denied_persisted_value(self, monkeypatch):
         # No new gate is needed for the "config.json written before the policy

@@ -157,7 +157,7 @@ def select_provider_backend(
     Precedence: the member-DM auto-route, then the configured default. The
     member arm goes through :func:`resolve_selected_backend` — the same
     governance/selectability gate the persisted field crosses, so a denied or
-    unknown value degrades to kiro and the member thread runs as plain chat.
+    unknown value degrades to pi and the member thread runs as plain chat.
 
     Lives here rather than inline in ``create_provider_factory`` so the
     factory body stays a single selection CALL with no branching of its own:

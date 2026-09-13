@@ -323,13 +323,13 @@ POLICY_ID_BY_BACKEND: dict = {
 #: cannot reach. So the scope is additive over a floor: it can WIDEN the set past
 #: what this deployment would otherwise select, never shrink it below this member.
 #:
-#: kiro-cli, not KAS, deliberately: KAS is not an independent harness — it is
-#: served by kiro-cli's own ACP relay (``acp/kas_transport.build_kas_argv`` returns
-#: ``[kiro_bin, "acp", "--agent-engine", "v3", "--auth-method", "cli"]``), so a KAS
-#: floor would rest on the same binary while adding a second thing that can be
-#: absent. The floor has to be the member with the fewest preconditions of its own.
-#: Revisit if KAS ever ships a binary of its own.
-GOVERNANCE_FLOOR_BACKEND: str = ACP_BACKEND_KIRO
+#: The floor follows the default backend: pi is what an operator who configures
+#: nothing gets, so it is what the policy may never remove. kiro-cli is not the
+#: floor even though it was the original default — and KAS never is, since it is
+#: not an independent harness but kiro-cli's own ACP relay
+#: (``acp/kas_transport.build_kas_argv`` returns ``[kiro_bin, "acp", "--agent-engine",
+#: "v3", "--auth-method", "cli"]``), so a KAS floor would rest on the same binary.
+GOVERNANCE_FLOOR_BACKEND: str = ACP_BACKEND_PI
 
 # ── Two sets, because policy must be RE-APPLIED, not applied once ──
 #
@@ -464,14 +464,14 @@ def resolve_selected_backend(value: object) -> str:
     selectable = selectable_backends()
     if isinstance(value, str) and value in selectable:
         return value
-    if value not in (None, ACP_BACKEND_KIRO):
+    if value not in (None, ACP_BACKEND_PI):
         logger.warning(
             "Ignoring agent.acp_backend %r (not selectable in this build); using "
             "the default backend. Selectable values: %s",
             value,
             ", ".join(repr(b) for b in sorted(selectable)),
         )
-    return ACP_BACKEND_KIRO
+    return ACP_BACKEND_PI
 
 
 # ── Capability membership (harness-parity H6, H7) ──

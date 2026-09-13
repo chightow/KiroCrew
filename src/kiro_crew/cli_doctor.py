@@ -406,10 +406,11 @@ _FFMPEG_LINUX_HINT = (
 )
 
 
-# kiro-cli is the DEFAULT agent backend; the claude-agent-acp binary below belongs
-# to Claude Code, which is also selectable. Doctor reports it as an optional
-# backend, and the verdict comes from ``agent_sdk.probe_backend`` so doctor and the
-# dashboard cannot give different answers.
+# pi is the DEFAULT agent backend. kiro-cli is still selectable, and the
+# claude-agent-acp binary below belongs to Claude Code, which is also selectable.
+# Doctor reports both as real backends -- present or absent -- and the verdict comes
+# from ``agent_sdk.probe_backend`` so doctor and the dashboard cannot give
+# different answers.
 _CLAUDE_ACP_BIN = "claude-agent-acp"
 
 # Managed servers doctor must NEVER add to ``allowedTools``.
@@ -1117,7 +1118,7 @@ def _doctor_claude_backend() -> None:
 
     Claude Code needs TWO binaries and the probe names whichever is absent, so a
     half-install does not read as a total one. Never a hard failure: it is an
-    optional backend and kiro-cli is the floor. The verdict comes from
+    optional backend and pi is the floor. The verdict comes from
     ``agent_sdk.probe_backend`` -- the same owner ``GET /api/acp-backends`` uses --
     so doctor and the dashboard cannot give different answers.
     """
@@ -1157,6 +1158,43 @@ def _doctor_claude_backend() -> None:
         # probe's three-valued verdict exists to prevent, and which the dashboard
         # also refuses to make.
         print("  claude-acp:  ⚠️  could not check")
+
+
+def _doctor_pi_backend() -> None:
+    """Report pi as the DEFAULT agent backend, installed or not.
+
+    Its own function, not an inline block, for the same reason as
+    ``_doctor_claude_backend``: a test must not reach an operator's real
+    installation to check three print statements.
+
+    pi needs ONE component (the pi-acp adapter entry point) and the probe names it
+    when it is absent. There is deliberately no install command: the adapter has no
+    published package yet, so the row names the component and the spawn error names
+    the override rather than inventing an ``npm i -g`` for a tarball that does not
+    exist. Never a hard failure even though pi is the default and the floor: doctor
+    reports install state, and a missing default reads as "sessions will fail until
+    this resolves", not as a broken install. The verdict comes from
+    ``agent_sdk.probe_backend`` -- the same owner ``GET /api/acp-backends`` uses --
+    so doctor and the dashboard cannot give different answers.
+    """
+    try:
+        from kiro_crew.acp_backends import ACP_BACKEND_PI
+        from kiro_crew.agent_sdk import INSTALLED, MISSING, probe_backend
+
+        pi_state = probe_backend(ACP_BACKEND_PI)
+    except Exception:
+        pi_state = None
+    if pi_state is None:
+        print("  pi-acp:      ⚠️  could not check")
+    elif pi_state.installed == INSTALLED:
+        print("  pi-acp:      ✅ installed (the default agent backend)")
+    elif pi_state.installed == MISSING:
+        missing = ", ".join(pi_state.missing_components) or "components"
+        print(f"  pi-acp:      ⏭  {missing} not found (the default agent backend)")
+    else:
+        # UNKNOWN: same collapse as the claude row -- a failed check is not an
+        # absent binary.
+        print("  pi-acp:      ⚠️  could not check")
 
 
 #: The managed default agent, whose spec is the one a stock install runs.
@@ -3388,9 +3426,9 @@ def _doctor(platform_boot_error: "Exception | None" = None, bundle: bool = False
 
     # ── Dependencies ──
     print("Dependencies")
-    # kiro-cli is the DEFAULT agent backend and the floor every deployment keeps.
-    # Claude Code is selectable too (``BASELINE_SELECTABLE_BACKENDS``), so it is
-    # reported as a real optional backend -- present or absent -- rather than only
+    # pi is the DEFAULT agent backend and the floor every deployment keeps.
+    # kiro-cli and Claude Code are selectable too (``BASELINE_SELECTABLE_BACKENDS``),
+    # so each is reported as a real backend -- present or absent -- rather than only
     # when it happens to be installed. The verdict comes from the same owner the
     # dashboard asks, so doctor and the panel cannot disagree.
     kiro = shutil.which(KIRO_CLI_BIN)
@@ -3398,9 +3436,10 @@ def _doctor(platform_boot_error: "Exception | None" = None, bundle: bool = False
         print(f"  kiro-cli:    ✅ {kiro}")
         _doctor_headless_auth(issues)
     else:
-        print("  kiro-cli:    ⏭  not found (the default agent backend)")
+        print("  kiro-cli:    ⏭  not found (a selectable agent backend)")
         print("               Install kiro-cli per its docs, then: kiro-cli login")
 
+    _doctor_pi_backend()
     _doctor_claude_backend()
     # After the install rows, and per harness rather than per provider: sign-in is a
     # different question from install with a different remedy, and every harness's

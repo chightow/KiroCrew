@@ -26,6 +26,7 @@ from aiohttp.test_utils import TestClient, TestServer
 from chat_test_helpers import _make_state, stub_readonly_spec_publisher
 
 from kiro_crew import context as context_module
+from kiro_crew.acp_backends import ACP_BACKEND_KIRO
 from kiro_crew.context import ContextBuilder
 from kiro_crew.dashboard.handlers.side import (
     _run_side_turn,
@@ -368,6 +369,7 @@ async def test_side_run_id_never_leaks_to_main_channels(tmp_path, monkeypatch):
 @pytest.mark.asyncio
 async def test_empty_llm_output_produces_visible_fallback(tmp_path, monkeypatch):
     """When stream_and_collect returns empty, /side broadcasts a fallback bubble."""
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     state = _make_state(tmp_path)
     events = _capture_broadcasts(state)
     parent = state.get_or_create_slot("parent")
@@ -841,6 +843,7 @@ async def test_side_turn_streams_under_read_only_policy(tmp_path, monkeypatch):
     from kiro_crew.hooks import HookManager
     from kiro_crew.llm_helpers import ToolApprovalPolicy
 
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     live_gate = HookManager()
     state = _make_state(tmp_path, context_builder=SimpleNamespace(hooks=live_gate))
     _capture_broadcasts(state)
@@ -889,6 +892,7 @@ async def test_side_turn_without_a_live_gate_passes_no_hooks(tmp_path, monkeypat
     would classify reads against none of the operator's opt-outs or deny rules."""
     from kiro_crew.llm_helpers import ToolApprovalPolicy
 
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     state = _make_state(tmp_path)
     assert state.context_builder is None
     _capture_broadcasts(state)
@@ -994,6 +998,7 @@ async def test_side_turn_binds_its_session_to_the_derived_readonly_agent(
     main-chat grants unattended. The derived name is what makes every tool call
     raise a permission request the gate can judge.
     """
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     state = _make_state(tmp_path)
     _capture_broadcasts(state)
     parent = state.get_or_create_slot("parent")
@@ -1039,6 +1044,7 @@ async def test_side_turn_refuses_when_the_readonly_spec_cannot_be_derived(tmp_pa
         raise ReadOnlySpecError("base_spec_missing", f"no agent spec declares {base_name!r}")
 
     monkeypatch.setattr("kiro_crew.dashboard.handlers.side.publish_readonly_spec", _refuse)
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     state = _make_state(tmp_path)
     events = _capture_broadcasts(state)
     parent = state.get_or_create_slot("parent")
@@ -1075,6 +1081,7 @@ async def test_side_turn_rebinds_a_retained_session_whose_binding_changed(
     cwd is asked for, and kiro-cli read the spec at spawn. So a retained session
     bound under another agent, project or derived-spec content is destroyed
     before the turn acquires one; a session whose binding matches is kept."""
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     state = _make_state(tmp_path)
     _capture_broadcasts(state)
     parent = state.get_or_create_slot("parent")
@@ -1178,6 +1185,7 @@ async def test_a_project_change_during_derivation_does_not_split_check_and_spawn
     turn read once: a change landing during the off-loop derivation must not
     have the check run in A and the spawn happen in B, whose file the check
     never saw. B is picked up by the next turn's binding."""
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     state = _make_state(tmp_path)
     _capture_broadcasts(state)
     parent = state.get_or_create_slot("parent")
@@ -1261,6 +1269,7 @@ async def test_side_turn_destroys_a_live_session_no_binding_vouches_for(
 ):
     """A live side session with no recorded binding cannot be shown to run under
     the derived spec, so it is cold-started rather than trusted."""
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     state = _make_state(tmp_path)
     _capture_broadcasts(state)
     parent = state.get_or_create_slot("parent")
@@ -1296,6 +1305,7 @@ async def test_a_turn_from_a_replaced_sidecar_never_touches_the_replacement_sess
     """Close+reopen while a turn is deriving its spec: the old task must not
     destroy, acquire or release anything. Its own generation's session was
     destroyed by the close, and the replacement lives under another key."""
+    _configure_backend(monkeypatch, ACP_BACKEND_KIRO)  # readonly-spec path needs kiro
     state = _make_state(tmp_path)
     _capture_broadcasts(state)
     parent = state.get_or_create_slot("parent")

@@ -71,8 +71,8 @@ export default function SideChat({ slot }: { slot: string }) {
   // The footer describes what the backend enforces, so it follows the selected
   // harness: the derived `<agent>--readonly` spec is a kiro-cli mechanism, and on
   // any other backend the side turn runs with no tools at all (REJECT_ALL). The
-  // kiro backend is the empty string (`ACP_BACKEND_KIRO`), so an unloaded or
-  // absent value reads as kiro — the default the gateway itself falls back to.
+  // kiro backend is the empty string (`ACP_BACKEND_KIRO`), so an absent value
+  // reads as pi — the default the gateway itself falls back to.
   const cfgQ = useQuery<{ agent?: { acp_backend?: string } }>({
     queryKey: ['kirocrewConfig'],
     queryFn: () => api.kirocrewConfig(),
@@ -80,8 +80,9 @@ export default function SideChat({ slot }: { slot: string }) {
   // Mirrors the backend: the read-only allowance is granted only when the
   // loaded config names the kiro backend; a turn whose config cannot load runs
   // with no tools, so the footer claims nothing until the config is loaded and
-  // says so when the load failed.
-  const readOnlyToolsAvailable = cfgQ.isSuccess && !(cfgQ.data?.agent?.acp_backend ?? '')
+  // says so when the load failed. An absent key reads as the pi default, which
+  // is not in the read-only set.
+  const readOnlyToolsAvailable = cfgQ.isSuccess && !(cfgQ.data?.agent?.acp_backend ?? 'pi')
   const reduxSide = useAppSelector(s => s.chat.slotSide[slot])
   const parentTurnCount = useAppSelector(s =>
     s.chat.messages.filter(m => m.role === 'user' || m.role === 'assistant').length

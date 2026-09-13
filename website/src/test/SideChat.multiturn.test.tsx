@@ -94,11 +94,14 @@ describe('Side multi-turn conversation', () => {
           stopPressedAt: {},
         } as unknown as RootState['chat'],
       })
+      const { api } = await import('../api/client')
+      // The footer claims the read-only allowance only once the config has
+      // loaded and named the kiro backend — an absent key reads as the pi
+      // default, which is not in the read-only set.
+      ;(api.kirocrewConfig as unknown as Mock).mockResolvedValue({ agent: { acp_backend: '' } })
       renderWithProviders(<SideChat slot={SLOT} />, { store })
       expect(screen.getByText('Turn 1 q')).toBeInTheDocument()
       expect(screen.getByText('Turn 2 a')).toBeInTheDocument()
-      // The footer claims the read-only allowance only once the config has
-      // loaded and named the kiro backend (the mock resolves to kiro's default).
       expect(await screen.findByRole('note')).toHaveTextContent(
         "Read-only · Lookups work here, but changes don't. Use the main chat to take action.",
       )

@@ -445,10 +445,10 @@ class TestSelectProviderBackend:
 
         assert select_provider_backend("dashboard_abc", "kas", "") == ""
 
-    def test_denied_member_backend_degrades_to_kiro(self):
+    def test_denied_member_backend_degrades_to_pi(self):
         from kiro_crew.members import select_provider_backend
 
-        assert select_provider_backend(MEMBER_KEY, "no-such-backend", "") == ""
+        assert select_provider_backend(MEMBER_KEY, "no-such-backend", "") == "pi"
 
 
 class TestSessionHistoryWriteProtected:

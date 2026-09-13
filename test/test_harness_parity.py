@@ -1,7 +1,8 @@
 """Structural pins for the harness-parity invariants.
 
-Kiro Crew drives one first-class harness, ``kiro-cli``, and adapts the others.
-Each test here closes one invariant from
+Kiro Crew's default harness is ``pi``; ``kiro-cli`` keeps the first-class code
+paths below, and the other harnesses are adapted to them. Each test here closes
+one invariant from
 ``docs/system-specs/modules/harness-parity.md`` by its id, so a change that
 degrades the Kiro path goes red here rather than at an operator's first message.
 
@@ -87,17 +88,17 @@ def _field_enum(name: str) -> object:
 
 
 # ---------------------------------------------------------------------------
-# Group A: Kiro is the default and the floor
+# Group A: Pi is the default and the floor
 # ---------------------------------------------------------------------------
 
 
-def test_kiro_is_the_default_backend() -> None:
-    """H1: configuring nothing yields the Kiro harness."""
-    assert _field_default("acp_backend") == ACP_BACKEND_KIRO
+def test_pi_is_the_default_backend() -> None:
+    """H1: configuring nothing yields the Pi harness."""
+    assert _field_default("acp_backend") == ACP_BACKEND_PI
 
 
-def test_kiro_is_always_selectable() -> None:
-    """H1: the Kiro harness is never gated behind a preview flag or an edition.
+def test_pi_is_always_selectable() -> None:
+    """H1: the Pi harness is never gated behind a preview flag or an edition.
 
     Every other member is a policy decision; this one is the floor. Without it
     an operator can persist a configuration in which no harness is selectable.
@@ -107,8 +108,8 @@ def test_kiro_is_always_selectable() -> None:
     dashboard offers. The floor is a property of the BASELINE, which is what makes
     it independent of whatever an edition registers on top.
     """
-    assert ACP_BACKEND_KIRO in BASELINE_SELECTABLE_BACKENDS
-    assert ACP_BACKEND_KIRO in selectable_backends()
+    assert ACP_BACKEND_PI in BASELINE_SELECTABLE_BACKENDS
+    assert ACP_BACKEND_PI in selectable_backends()
 
 
 def test_provider_enum_is_acp_only() -> None:
@@ -122,8 +123,8 @@ def test_provider_enum_is_acp_only() -> None:
 
 
 @pytest.mark.parametrize("persisted", ["", "kas", "byo-harness", "claude", None, 7])
-def test_unselectable_backend_degrades_to_kiro(persisted: object) -> None:
-    """H3: an unusable persisted value degrades to Kiro and never raises.
+def test_unselectable_backend_degrades_to_pi(persisted: object) -> None:
+    """H3: an unusable persisted value degrades to Pi and never raises.
 
     Includes the non-string shapes a hand-edited config.json can hold: a gate
     that raises here turns a typo into a gateway that will not boot.
@@ -138,7 +139,7 @@ def test_unselectable_backend_degrades_to_kiro(persisted: object) -> None:
     resolved = _normalize_acp_backend(persisted)
     assert resolved in selectable_backends()
     if persisted not in selectable_backends():
-        assert resolved == ACP_BACKEND_KIRO
+        assert resolved == ACP_BACKEND_PI
 
 
 def test_registering_a_backend_makes_it_survive_load() -> None:
@@ -164,7 +165,7 @@ def test_registering_a_backend_makes_it_survive_load() -> None:
     try:
         acp_backends._baseline.discard(ACP_BACKEND_CLAUDE)
         acp_backends._selectable.discard(ACP_BACKEND_CLAUDE)
-        assert _normalize_acp_backend(ACP_BACKEND_CLAUDE) == ACP_BACKEND_KIRO
+        assert _normalize_acp_backend(ACP_BACKEND_CLAUDE) == ACP_BACKEND_PI
 
         acp_backends.register_selectable_backend(ACP_BACKEND_CLAUDE)
         assert _normalize_acp_backend(ACP_BACKEND_CLAUDE) == ACP_BACKEND_CLAUDE

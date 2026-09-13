@@ -129,7 +129,7 @@ class BackgroundRuntimeDeps:
     background_agent: str
     heartbeat_key: str
     runtime_agent: str
-    acp_backend_kiro: str
+    acp_backend_default: str
     bg_recycle_pct: float
     bg_blind_recycle_prompts: int
     runtime_backends: Callable[[], Set[str]]
@@ -279,7 +279,7 @@ class BackgroundSessionRuntime:
         """Return the configured background backend, or ``None`` if unreadable."""
         logger = self._deps.logger
         try:
-            backend = getattr(self._owner._cfg.agent, "acp_backend", self._deps.acp_backend_kiro)
+            backend = getattr(self._owner._cfg.agent, "acp_backend", self._deps.acp_backend_default)
         except Exception:
             logger.warning(
                 "agent.acp_backend is unreadable; treating the _bg backend as unknown",
@@ -291,7 +291,7 @@ class BackgroundSessionRuntime:
     def _configured_bg_backend(self) -> str:
         """Return the backend background runtimes must spawn under."""
         backend = self._owner._configured_bg_backend_raw()
-        return backend if backend is not None else self._deps.acp_backend_kiro
+        return backend if backend is not None else self._deps.acp_backend_default
 
     def _bg_backend_supports_runtime(self) -> bool:
         """Whether the configured backend can use the multiplexed runtime."""
@@ -471,7 +471,7 @@ class BackgroundSessionRuntime:
                 configured_backend = (
                     configured_backend_raw
                     if configured_backend_raw is not None
-                    else self._deps.acp_backend_kiro
+                    else self._deps.acp_backend_default
                 )
                 runtime_capable = configured_backend in self._deps.runtime_backends()
                 if runtime_capable and runtime is not None and runtime.is_alive():

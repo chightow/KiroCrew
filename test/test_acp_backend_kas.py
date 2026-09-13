@@ -28,6 +28,7 @@ from kiro_crew.acp.types import (
     ACP_BACKEND_CODEX,
     ACP_BACKEND_KAS,
     ACP_BACKEND_KIRO,
+    ACP_BACKEND_PI,
     ACP_BACKENDS_KNOWN,
     PROVIDER_LABEL_CLAUDE,
     PROVIDER_LABEL_DEFAULT,
@@ -195,11 +196,11 @@ class TestConfigThreading:
     future refactor from dropping the kwarg silently.
     """
 
-    def test_default_config_is_kiro(self):
+    def test_default_config_is_pi(self):
         cfg = KiroCrewConfig()
-        assert cfg.agent.acp_backend == ACP_BACKEND_KIRO
+        assert cfg.agent.acp_backend == ACP_BACKEND_PI
         provider = cfg.create_provider_factory()(session_key="test:default", agent="")
-        assert provider.is_kiro_backend is True
+        assert provider.is_pi_backend is True
         assert provider.is_kas_backend is False
 
     def test_configured_kas_reaches_the_provider(self):
@@ -243,7 +244,7 @@ class TestConfigRoundTrip:
         assert cfg.agent.streaming is False
 
     def test_absent_key_loads_as_the_default(self, tmp_path):
-        assert _load_agent_config({}, tmp_path).agent.acp_backend == ACP_BACKEND_KIRO
+        assert _load_agent_config({}, tmp_path).agent.acp_backend == ACP_BACKEND_PI
 
     def test_kas_survives_a_load_from_disk(self, tmp_path):
         """The selectable value must reach the provider, not degrade.
@@ -266,7 +267,7 @@ class TestConfigRoundTrip:
         would turn a config typo into a startup crash.
         """
         cfg = _load_agent_config({"acp_backend": bad}, tmp_path)
-        assert cfg.agent.acp_backend == ACP_BACKEND_KIRO
+        assert cfg.agent.acp_backend == ACP_BACKEND_PI
 
 
 class TestBackendThreading:
@@ -348,10 +349,12 @@ class TestNoImportCycle:
                 "-c",
                 "import kiro_crew.config.loader as m;"
                 "print(m._normalize_acp_backend(''), m._normalize_acp_backend('nope'), sep='|')",
+                # '' still spells kiro-cli and survives; an unknown id degrades to
+                # the default backend (pi).
             ],
             capture_output=True,
             text=True,
             timeout=120,
         )
         assert proc.returncode == 0, proc.stderr
-        assert proc.stdout.strip().split("|") == ["", ""]
+        assert proc.stdout.strip().split("|") == ["", "pi"]
