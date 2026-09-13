@@ -4397,6 +4397,7 @@ class AcpClient:
         so this accessor adds no scheduling or failure point to a call site shared
         with kiro-cli (harness-parity H13).
         """
+        return self._session_mcp_servers()
 
     def _opencode_session_mcp_servers(self) -> list:
         """MCP server array passed to an opencode ``session/new`` / ``session/load``.

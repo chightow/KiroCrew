@@ -221,6 +221,31 @@ class TestPiProjection:
 # ── deny at the approval request ────────────────────────────────────────────
 
 
+class TestPiSessionHook:
+    def test_hook_forwards_the_translated_array_whole(self, tmp_path, agents_dir):
+        """The client hook is a filled seam, not a stub.
+
+        It shipped as a docstring-only def (implicit ``None``), and ``None``
+        spread into ``session/new``'s ``mcpServers`` killed every pi session at
+        startup -- background sessions first (``TypeError: Value after * must
+        be an iterable``) while the harness otherwise looked healthy. pi-acp
+        reads no agent file and skips unknown shapes with a log while the
+        session succeeds, so there is no fatal shape to narrow for: the
+        translated array goes out whole, which is what
+        ``_session_mcp_servers`` already returns a copy of.
+        """
+        _write_spec(
+            agents_dir,
+            servers={"kirocrew-core": dict(_CORE)},
+            tools=["@kirocrew-core"],
+        )
+        client = AcpClient(work_dir=tmp_path, agent="kirocrew", acp_backend=ACP_BACKEND_PI)
+        servers = client._pi_session_mcp_servers()
+        assert isinstance(servers, list)
+        assert servers == client._session_mcp_servers()
+        assert "kirocrew-core" in _by_name(servers)
+
+
 class TestPiDenyAtApproval:
     def _client(self, tmp_path, agents_dir, *, servers: dict) -> AcpClient:
         _write_spec(agents_dir, servers=servers, tools=["@kirocrew-core", "@my_srv"])
