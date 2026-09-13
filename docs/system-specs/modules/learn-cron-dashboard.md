@@ -1946,7 +1946,13 @@ time the turn raises `AcpAuthRequired` the history is already rewritten and no
 error card can undo it. All three therefore call `reject_if_kiro_unverified`
 BEFORE any mutation, returning the shared `kiro_prerequisite_required` 503.
 (`switch-variant` is exempt — it swaps an already-stored variant and starts no
-turn.)
+turn.) Sessions on a BYO-auth backend (`ACP_BACKENDS_BYO_AUTH`, pi first)
+skip that call via `session_bypasses_kiro_readiness`: their sessions never
+needed Kiro sign-in, so the Kiro gate on their reruns is friction with no
+security function. The bypass answers for the session's own backend arm
+(member DM sessions take `agent.member_acp_backend`, like the provider
+factory) and fails closed — an unresolvable backend, an unreadable config,
+or a member denied back to kiro stays gated.
 
 **`POST /v1/chat/completions` also fails closed**, for a different reason: it has
 no transcript the caller reads. Its collectors pick up only `chunk`/`assistant`
@@ -1954,7 +1960,10 @@ roles, so the `error` card an `AcpAuthRequired` turn appends is invisible and th
 request would return **HTTP 200 with empty content** — an OpenAI SDK client
 cannot distinguish that from a model that legitimately said nothing. It returns
 the `kiro_prerequisite_required` 503 in OpenAI error shape until the endpoint
-learns to translate `AcpAuthRequired` itself.
+learns to translate `AcpAuthRequired` itself — except on a BYO-auth backend,
+where there is no Kiro sign-in to fail closed on: an id-bound call answers for
+its slot's session, an ephemeral call (no id) for the default backend, and the
+body is peeked rather than parsed so malformed input keeps its existing status.
 
 **An unresolved check is never rendered as "setup required."** The cold probe
 spawns two sandboxed `kiro-cli` subprocesses (`--version`, then `whoami`), which

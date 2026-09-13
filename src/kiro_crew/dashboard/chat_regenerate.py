@@ -11,7 +11,10 @@ from aiohttp import web
 from kiro_crew.dashboard.chat_persistence import _save_slot_to_history, save_slot_off_loop
 from kiro_crew.dashboard.chat_runner import _run_chat, _start_next_queued_turn
 from kiro_crew.dashboard.chat_utils import effective_session_key, slot_history_key
-from kiro_crew.dashboard.kiro_readiness import reject_if_kiro_unverified
+from kiro_crew.dashboard.kiro_readiness import (
+    reject_if_kiro_unverified,
+    session_bypasses_kiro_readiness,
+)
 from kiro_crew.dashboard.remote_relay import remote_bound_refusal
 from kiro_crew.dashboard.state import DashboardState
 from kiro_crew.security import redact_credentials, redact_exfiltration_urls
@@ -43,12 +46,15 @@ async def api_chat_slot_regenerate(request: web.Request) -> web.Response:
     """POST /api/chat/slots/{slot}/regenerate — regenerate the last assistant reply."""
     # Destructive: this truncates and PERSISTS history before the background
     # turn runs, so a failed turn cannot undo it. Unlike an ordinary send, the
-    # readiness latch must be honored BEFORE the mutation.
-    blocked = await reject_if_kiro_unverified(request)
-    if blocked is not None:
-        return blocked
-    state: DashboardState = request.app["state"]
+    # readiness latch must be honored BEFORE the mutation -- except on a BYO-auth
+    # backend (pi first), whose sessions never needed Kiro sign-in: the gate
+    # stays for everything else, including an unresolvable backend (fail closed).
     name = request.match_info["slot"]
+    if not await session_bypasses_kiro_readiness(name):
+        blocked = await reject_if_kiro_unverified(request)
+        if blocked is not None:
+            return blocked
+    state: DashboardState = request.app["state"]
     slot = state._slots.get(name)
     if not slot:
         return web.json_response({"error": "not found", "code": "slot_not_found"}, status=404)
@@ -247,12 +253,15 @@ async def api_chat_slot_edit_resend(request: web.Request) -> web.Response:
 
     # Destructive: this truncates and PERSISTS history before the background
     # turn runs, so a failed turn cannot undo it. Unlike an ordinary send, the
-    # readiness latch must be honored BEFORE the mutation.
-    blocked = await reject_if_kiro_unverified(request)
-    if blocked is not None:
-        return blocked
-    state: DashboardState = request.app["state"]
+    # readiness latch must be honored BEFORE the mutation -- except on a BYO-auth
+    # backend (pi first), whose sessions never needed Kiro sign-in: the gate
+    # stays for everything else, including an unresolvable backend (fail closed).
     name = request.match_info["slot"]
+    if not await session_bypasses_kiro_readiness(name):
+        blocked = await reject_if_kiro_unverified(request)
+        if blocked is not None:
+            return blocked
+    state: DashboardState = request.app["state"]
     slot = state._slots.get(name)
     request_app = request.get("app", "")
     if not slot:

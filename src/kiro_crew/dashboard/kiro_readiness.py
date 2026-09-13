@@ -21,6 +21,7 @@ latched value can be arbitrarily stale. That splits the callers in two:
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 
@@ -92,6 +93,46 @@ async def kiro_verified_ready(service: object) -> bool:
     if not isinstance(service, KiroPrerequisiteService):
         return False
     return await service.verified_ready(max_age_secs=_VERIFY_MAX_AGE_SECS)
+
+
+async def session_bypasses_kiro_readiness(session_key: str | None) -> bool:
+    """True when a session on *session_key* needs no Kiro sign-in.
+
+    The BYO-auth bypass for the blocking readiness gates. A session on a
+    backend in ``ACP_BACKENDS_BYO_AUTH`` (pi first) authenticates from its own
+    credential files, so demanding Kiro sign-in before its destructive rerun
+    or compat turn is friction with no security function and the gate is
+    skipped. Every other session -- kiro, KAS, and anything unresolvable --
+    stays gated.
+
+    The backend arm mirrors the provider factory's selection
+    (``members.select_provider_backend``): a member DM session runs on
+    ``agent.member_acp_backend``, everything else on ``agent.acp_backend``.
+    The RAW configured value is what the predicate takes, so the check answers
+    for the backend the operator asked for rather than the kiro it would
+    degrade to. Fail closed throughout: an unreadable config, an unknown arm,
+    or a member denied back to kiro all answer False and keep the gate.
+    """
+
+    try:
+        # Local imports, and they must STAY local. ``config.loader`` sits below
+        # the dashboard in the layering and ``members`` sits above it; hoisting
+        # either to module scope risks closing an import cycle through whoever
+        # imports this gate module first.
+        from kiro_crew.acp_backends import bypasses_kiro_signin_gate
+        from kiro_crew.config.loader import KiroCrewConfig
+        from kiro_crew.members import is_member_session_key
+
+        cfg = await asyncio.to_thread(KiroCrewConfig.load)
+        raw = (
+            cfg.agent.member_acp_backend
+            if is_member_session_key(session_key)
+            else cfg.agent.acp_backend
+        )
+        return bypasses_kiro_signin_gate(raw)
+    except Exception:
+        logger.debug("BYO-auth bypass check failed; keeping the Kiro gate", exc_info=True)
+        return False
 
 
 def _log_safe_path(request: object) -> str:

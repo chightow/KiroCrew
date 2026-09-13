@@ -38,6 +38,7 @@ from kiro_crew.acp_backends import (
     ACP_BACKEND_OPENCODE,
     ACP_BACKENDS_ACP_RUNTIME,
     ACP_BACKENDS_ADVERTISED_MODEL_SELECTION,
+    ACP_BACKENDS_BYO_AUTH,
     ACP_BACKENDS_COMPACT,
     ACP_BACKENDS_INTERNAL_SANDBOX,
     ACP_BACKENDS_SEED_LOCAL_SETTINGS,
@@ -172,6 +173,12 @@ def test_membership_is_unchanged_by_the_move() -> None:
         {ACP_BACKEND_CLAUDE, ACP_BACKEND_CODEX, ACP_BACKEND_OPENCODE}
     )
     assert ACP_BACKENDS_SEED_LOCAL_SETTINGS == frozenset({ACP_BACKEND_CLAUDE})
+    # The BYO-auth seam starts EMPTY on main: pi -- the first intended member --
+    # joins it on the ``feat/pi-acp-selectable`` side together with its
+    # ``ACP_BACKENDS_KNOWN`` registration (H8: every member must be a recognized
+    # id). A member added here without that registration fails the subset pin
+    # above; update this pin when pi joins, in the slice's membership-test style.
+    assert ACP_BACKENDS_BYO_AUTH == frozenset()
 
 
 def test_model_registry_namespace_maps_every_known_backend() -> None:
