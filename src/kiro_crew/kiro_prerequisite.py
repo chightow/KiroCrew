@@ -1,10 +1,16 @@
-"""Cross-platform Kiro CLI readiness detection.
+"""Cross-platform readiness detection for the default agent backend.
 
 The public KiroCrew provider is KiroACP-only, so a healthy, authenticated
-``kiro-cli`` is a hard runtime prerequisite. This module's job is to answer one
-question about the gateway host: **is there a Kiro CLI that runs, and is it
-signed in?** It answers that by running the CLI's own read-only probes
-(``--version``, then ``whoami``) inside the OS sandbox.
+``kiro-cli`` is the hard runtime prerequisite whenever the deployment's default
+backend is the Kiro family -- and a BYO-auth member (pi first) is the same
+gate's other half: it brings its own credentials, so a pi-default host is
+READY when the pi-acp adapter is present, with no Kiro sign-in involved. This
+module's job is to answer one question about the gateway host: **is the backend
+this deployment actually runs on runnable here?** For the Kiro family that is
+``kiro-cli --version`` then ``whoami`` -- the CLI's own read-only probes, run
+inside the OS sandbox; for a BYO-auth default it is the adapter's install probe
+(the same owner the doctor and ``GET /api/acp-backends`` use), consulted in
+:meth:`KiroPrerequisiteService._probe` before any kiro-cli spawn.
 
 **It performs no setup of its own.** Both setup steps belong to Kiro CLI and are
 taken by the user:
@@ -420,6 +426,12 @@ class PrerequisiteStatus:
     installed: bool = False
     authenticated: bool = False
     ready: bool = False
+    # The resolved default agent backend this status describes. "" means the
+    # Kiro family -- the payload's original meaning, byte-identical for an
+    # existing kiro-default deployment. A BYO-auth member (pi, ...) names the
+    # adapter whose presence ``ready`` depends on; the kiro-cli fields below
+    # are then inert and the frontend can render backend-appropriate copy.
+    agent_backend: str = ""
     # Something on the host needs an owner-driven repair before ``ready`` can go
     # true. Only the agent-spec overlay sets it — a missing CLI is NOT a repair
     # (the user installs it from OFFICIAL_INSTALL_DOCS_URL, which Kiro Crew has no
@@ -2022,6 +2034,38 @@ def _unlaunchable_mcp_servers(spec_path: Path) -> str:
     return ""
 
 
+def _resolved_default_backend() -> str:
+    """The backend a chat session would actually start on, resolved.
+
+    ``config.agent.acp_backend`` is an unresolved spelling;
+    :func:`resolve_selected_backend` normalizes it to the selectable member a
+    session would run on -- the build's default when nothing was configured, so
+    a pi-default build is pi when the key is absent (fresh installs carry the
+    field default, ``"pi"``). ``""`` is kiro-cli's id, not "unset", and
+    resolves to kiro-cli. An
+    unreadable config falls back to that same default rather than holding the
+    first-run gate hostage or, worse, downgrading it to a kiro-cli demand the
+    deployment never selected.
+    """
+    try:
+        from kiro_crew.agent_sdk.backends import resolve_selected_backend
+        from kiro_crew.config.loader import KiroCrewConfig
+
+        raw = getattr(getattr(KiroCrewConfig.load(), "agent", None), "acp_backend", None)
+        return resolve_selected_backend(raw)
+    except Exception:
+        return resolve_selected_backend(None)
+
+
+def _byo_auth_backends() -> frozenset[str]:
+    """The backends that bring their own auth and skip Kiro sign-in."""
+    try:
+        from kiro_crew.agent_sdk.backends import ACP_BACKENDS_BYO_AUTH
+    except Exception:
+        return frozenset()
+    return ACP_BACKENDS_BYO_AUTH
+
+
 class KiroPrerequisiteService:
     """Single-gateway coordinator for prerequisite probes and setup operations."""
 
@@ -2038,9 +2082,17 @@ class KiroPrerequisiteService:
         spec_lister: Callable[[], list[tuple[str, Path]]] | None = None,
         assume_ready: bool = False,
         warm_up_delay: float = _WARM_UP_DELAY_SECS,
+        # When True, a BYO-auth default backend (pi first) is judged ready by
+        # its adapter's install probe instead of the kiro-cli chain. Default
+        # False so every existing construction -- including the dozens of test
+        # fixtures that drive the kiro path against a temp home -- keeps its
+        # meaning; the gateway's two boot sites thread True explicitly, so the
+        # first-run gate ships pi-aware for a pi-default deployment.
+        byo_readiness: bool = False,
     ) -> None:
         self._platform = platform_name or sys.platform
         self._environ = environ if environ is not None else os.environ
+        self._byo_readiness = byo_readiness
         self._home = home or Path.home()
         if data_home is not None:
             self._data_home = data_home
@@ -2746,6 +2798,47 @@ class KiroPrerequisiteService:
             now = self._clock()
             if self._has_probed and not force and now - self._last_probe_at < _PROBE_CACHE_SECS:
                 return self._status
+
+            # A BYO-auth default needs no Kiro sign-in machinery at all, so this
+            # gate must not hang the first-run splash on a kiro-cli the deployment
+            # never selected. Resolve the backend a chat session would actually
+            # start on; when it is a BYO-auth member, readiness IS the adapter's
+            # install probe -- the identical owner the doctor's backend row and
+            # ``GET /api/acp-backends`` use, so the three can never disagree about
+            # whether this host can run the default. The kiro-cli probes below are
+            # skipped on this path even where they could run, because asking a
+            # pi-default host to install and sign into kiro-cli is the exact
+            # friction the BYO-auth seam exists to remove.
+            default_backend = _resolved_default_backend()
+            if self._byo_readiness and default_backend in _byo_auth_backends():
+                from kiro_crew.agent_sdk.backend_install import (
+                    INSTALLED,
+                    probe_backend,
+                )
+
+                installed = await asyncio.to_thread(probe_backend, default_backend)
+                byo_ready = installed.installed == INSTALLED
+                logger.info(
+                    "default agent backend %r is BYO-auth; prerequisite ready=%s "
+                    "(adapter %s)",
+                    default_backend,
+                    byo_ready,
+                    installed.installed,
+                )
+                self._status = PrerequisiteStatus(
+                    platform=_platform_label(self._platform),
+                    # installed/authenticated still describe the kiro-cli family;
+                    # leave them false and carry the verdict in ready + the
+                    # backend name rather than overloading them with pi's meaning.
+                    installed=False,
+                    authenticated=False,
+                    ready=byo_ready,
+                    agent_backend=default_backend,
+                    initial_setup_complete=self._initial_setup_complete,
+                )
+                self._stamp_probe(probe_identity)
+                return self._status
+
             self._viable_binary = ""
             (
                 self._probe_environment,

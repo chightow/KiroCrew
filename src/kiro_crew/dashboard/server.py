@@ -3808,6 +3808,10 @@ async def start_dashboard(
     app["kiro_prerequisite_service"] = await asyncio.to_thread(
         KiroPrerequisiteService,
         assume_ready=assume_kiro_ready,
+        # A BYO-auth default (pi) is ready when ITS adapter is present; without
+        # this the first-run splash would demand a kiro-cli the deployment never
+        # selected. Threaded at both gateway boot sites.
+        byo_readiness=True,
     )
     state.kiro_prerequisite_service = app["kiro_prerequisite_service"]
     # Probe Kiro readiness during boot rather than on the dashboard's first
@@ -4970,6 +4974,10 @@ async def start_api_server(
     app["kiro_prerequisite_service"] = await asyncio.to_thread(
         KiroPrerequisiteService,
         assume_ready=assume_kiro_ready,
+        # A BYO-auth default (pi) is ready when ITS adapter is present; without
+        # this the first-run splash would demand a kiro-cli the deployment never
+        # selected. Threaded at both gateway boot sites.
+        byo_readiness=True,
     )
     state.kiro_prerequisite_service = app["kiro_prerequisite_service"]
     # Probe Kiro readiness during boot rather than on the dashboard's first

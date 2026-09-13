@@ -983,6 +983,7 @@ specified compatibility change.
   do not bypass first-run setup. App tokens remain denied. The two
   owner-only POST route (`repair-specs`) rewrites Kiro Crew's own agent specs and
   returns `200`; it is the only write on this surface.
+  BYO-auth defaults (pi first) take a different branch of the same surface: when the dashboard boots with `byo_readiness` and the resolved default backend is a BYO-auth member, readiness IS the adapter install verdict (`backend_install.probe_backend` -- the same owner doctor and `GET /api/acp-backends` use) and the kiro-cli chain is skipped entirely, so a deployment whose default never used kiro-cli demands neither its binary nor its sign-in. `""` is kiro-cli's id, not "unset", and keeps the kiro chain; explicit `"pi"` and an absent key take the BYO branch.
   **Probing is boot-and-explicit-action only.** The readiness probe (two
   `kiro-cli` spawns) runs ONCE per gateway, in `warm_up()` shortly after start,
   and thereafter only on an explicit user action: the gate's Refresh / Check

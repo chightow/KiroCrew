@@ -6626,3 +6626,155 @@ class TestTerminalAuditErrorLabels:
         update_labels = [item for item in self._terminal_labels(events) if item[0] == "update_cli"]
         assert update_labels == [("update_cli", "failed", "nonzero exit")]
         self._assert_outcome_and_error_agree(events)
+
+
+class TestByoDefaultReadiness:
+    """A BYO-auth default backend (pi first) is ready when ITS adapter is present.
+
+    The first-run splash gate must not demand kiro-cli from a deployment whose
+    default backend never used one. ``byo_readiness`` switches the probe to the
+    adapter's install verdict -- the same owner doctor and
+    ``GET /api/acp-backends`` use -- and the kiro-cli chain is skipped entirely.
+
+    Spelling contract (merged parity law in ``test_pi_without_kiro_login.py``):
+    ``""`` is kiro-cli's id, not "unset", and keeps the kiro chain; explicit
+    ``"pi"`` and an absent key exercise the BYO default. ``"kiro-cli"`` is not
+    a resolvable spelling -- unrecognized values degrade to the build default.
+    """
+
+    @staticmethod
+    def _patch_config(monkeypatch, *, acp_backend: str | None) -> None:
+        from kiro_crew.config.loader import KiroCrewConfig
+
+        cfg = SimpleNamespace(agent=SimpleNamespace(acp_backend=acp_backend))
+        monkeypatch.setattr(KiroCrewConfig, "load", classmethod(lambda cls: cfg))
+
+    @staticmethod
+    def _probe(verdict: str):
+        from kiro_crew.agent_sdk.backend_install import BackendInstallState
+
+        def _fake(backend: str) -> BackendInstallState:
+            return BackendInstallState(backend, backend, verdict)
+
+        return _fake
+
+    @pytest.mark.asyncio
+    async def test_pi_default_with_adapter_installed_is_ready(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        self._patch_config(monkeypatch, acp_backend="pi")
+        monkeypatch.setattr(
+            "kiro_crew.agent_sdk.backend_install.probe_backend",
+            self._probe("installed"),
+        )
+        service = KiroPrerequisiteService(
+            platform_name="win32",
+            environ={"PATH": ""},
+            home=tmp_path,
+            audit_writer=_no_audit,
+            byo_readiness=True,
+        )
+        status = await service.snapshot(force=True)
+        assert status["ready"] is True
+        assert status["agent_backend"] == "pi"
+
+    @pytest.mark.asyncio
+    async def test_pi_default_with_adapter_missing_is_not_ready_and_skips_kiro_probes(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        self._patch_config(monkeypatch, acp_backend="pi")
+        monkeypatch.setattr(
+            "kiro_crew.agent_sdk.backend_install.probe_backend",
+            self._probe("missing"),
+        )
+        ran_kiro_probe = False
+
+        async def _runner(_command: str, args: list[str], **_kwargs: Any) -> None:
+            nonlocal ran_kiro_probe
+            ran_kiro_probe = True
+            raise AssertionError("kiro-cli probes must not run on a BYO default")
+
+        service = KiroPrerequisiteService(
+            platform_name="win32",
+            environ={"PATH": ""},
+            home=tmp_path,
+            process_runner=_runner,
+            audit_writer=_no_audit,
+            byo_readiness=True,
+        )
+        status = await service.snapshot(force=True)
+        assert status["ready"] is False
+        assert status["agent_backend"] == "pi"
+        assert ran_kiro_probe is False
+
+    @pytest.mark.asyncio
+    async def test_absent_backend_key_uses_the_build_default(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        # The true fresh-install shape: no key at all (fresh homes carry the
+        # field default, "pi"). Resolves through the default to pi, so the BYO
+        # branch fires exactly as for an explicit "pi".
+        self._patch_config(monkeypatch, acp_backend=None)
+        monkeypatch.setattr(
+            "kiro_crew.agent_sdk.backend_install.probe_backend",
+            self._probe("installed"),
+        )
+        service = KiroPrerequisiteService(
+            platform_name="win32",
+            environ={"PATH": ""},
+            home=tmp_path,
+            audit_writer=_no_audit,
+            byo_readiness=True,
+        )
+        status = await service.snapshot(force=True)
+        assert status["ready"] is True
+        assert status["agent_backend"] == "pi"
+
+    @pytest.mark.asyncio
+    async def test_explicit_kiro_backend_keeps_the_kiro_probe_chain(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        # "" is kiro-cli's id ("kiro-cli" is not a resolvable spelling and
+        # would degrade to the pi default instead).
+        self._patch_config(monkeypatch, acp_backend="")
+        called: list[str] = []
+        monkeypatch.setattr(
+            "kiro_crew.agent_sdk.backend_install.probe_backend",
+            lambda backend: called.append(backend) or self._probe("installed")(backend),
+        )
+        service = KiroPrerequisiteService(
+            platform_name="win32",
+            environ={"PATH": ""},
+            home=tmp_path,
+            audit_writer=_no_audit,
+            byo_readiness=True,
+        )
+        status = await service.snapshot(force=True)
+        # kiro-cli is not on the tmp home PATH: the kiro chain reports not ready,
+        # the BYO path never consulted the adapter probe, and the payload stays
+        # backend-unspecified.
+        assert status["ready"] is False
+        assert status["agent_backend"] == ""
+        assert called == []
+
+    @pytest.mark.asyncio
+    async def test_byo_readiness_flag_off_keeps_legacy_kiro_behaviour(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        self._patch_config(monkeypatch, acp_backend="")
+        monkeypatch.setattr(
+            "kiro_crew.agent_sdk.backend_install.probe_backend",
+            self._probe("installed"),
+        )
+        service = KiroPrerequisiteService(
+            platform_name="win32",
+            environ={"PATH": ""},
+            home=tmp_path,
+            audit_writer=_no_audit,
+            byo_readiness=False,
+        )
+        status = await service.snapshot(force=True)
+        # Flag off = the construction default for every non-gateway embedding:
+        # the kiro chain still runs (and finds nothing on the tmp home).
+        assert status["ready"] is False
+        assert status["agent_backend"] == ""
