@@ -1,0 +1,340 @@
+[
+  {
+    "agent_capabilities": {
+      "loadSession": true,
+      "mcpCapabilities": {
+        "http": true,
+        "sse": true,
+        "stdio": true
+      },
+      "promptCapabilities": {
+        "embeddedContext": true,
+        "image": true
+      }
+    },
+    "agent_version": "0.1.0",
+    "frame": "response",
+    "id": 1,
+    "protocol_version": 1
+  },
+  {
+    "config_options": [
+      {
+        "category": "model",
+        "currentValue": "muse-spark-1.3-contributor",
+        "id": "model",
+        "name": "Model",
+        "options": [
+          {
+            "name": "muse-spark-1.3-contributor",
+            "value": "muse-spark-1.3-contributor"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "category": "mode",
+        "currentValue": "read-only",
+        "id": "mode",
+        "name": "Session Mode",
+        "options": [
+          {
+            "description": "Every tool call asks KiroCrew for permission.",
+            "name": "read-only",
+            "value": "read-only"
+          }
+        ],
+        "type": "select"
+      },
+      {
+        "category": "effort",
+        "currentValue": "xhigh",
+        "description": "Reasoning depth for this model",
+        "id": "effort",
+        "name": "Effort",
+        "options": [
+          {
+            "name": "Low",
+            "value": "low"
+          },
+          {
+            "name": "Medium",
+            "value": "medium"
+          },
+          {
+            "name": "High",
+            "value": "high"
+          },
+          {
+            "name": "Xhigh",
+            "value": "xhigh"
+          },
+          {
+            "name": "Max",
+            "value": "max"
+          }
+        ],
+        "type": "select"
+      }
+    ],
+    "frame": "response",
+    "id": 2,
+    "session_id": "ses_pi_1"
+  },
+  {
+    "action": "update",
+    "events": [
+      {
+        "kind": "text_chunk",
+        "text": "PROBE"
+      }
+    ],
+    "frame": "session/update",
+    "session_update": "agent_message_chunk",
+    "text_chunk": {
+      "text": "PROBE",
+      "thinking": false
+    }
+  },
+  {
+    "action": "update",
+    "events": [],
+    "frame": "session/update",
+    "session_update": "usage_update",
+    "usage": [
+      7838,
+      1048576
+    ],
+    "usage_cost": 0.0007773260000000001
+  },
+  {
+    "frame": "response",
+    "id": 3,
+    "prompt_tokens": [
+      7679,
+      46,
+      113,
+      0
+    ],
+    "stop_reason": "end_turn"
+  },
+  {
+    "action": "compaction",
+    "frame": "_kiro.dev/compaction/status",
+    "params": {
+      "status": {
+        "type": "started"
+      }
+    }
+  },
+  {
+    "action": "compaction",
+    "frame": "_kiro.dev/compaction/status",
+    "params": {
+      "reason": "Compaction failed: Nothing to compact (session too small)",
+      "status": {
+        "type": "failed"
+      },
+      "summary": "Compaction failed: Nothing to compact (session too small)"
+    }
+  },
+  {
+    "action": "update",
+    "events": [],
+    "frame": "session/update",
+    "session_update": "usage_update",
+    "usage": [
+      7838,
+      1048576
+    ],
+    "usage_cost": 0.0007773260000000001
+  },
+  {
+    "frame": "response",
+    "id": 4,
+    "stop_reason": "end_turn"
+  },
+  {
+    "action": "update",
+    "events": [
+      {
+        "kind": "text_chunk",
+        "text": "PRIMED"
+      }
+    ],
+    "frame": "session/update",
+    "session_update": "agent_message_chunk",
+    "text_chunk": {
+      "text": "PRIMED",
+      "thinking": false
+    }
+  },
+  {
+    "action": "update",
+    "events": [],
+    "frame": "session/update",
+    "session_update": "usage_update",
+    "usage": [
+      22677,
+      1048576
+    ],
+    "usage_cost": 0.0022995560000000003
+  },
+  {
+    "frame": "response",
+    "id": 5,
+    "prompt_tokens": [
+      14955,
+      57,
+      7665,
+      0
+    ],
+    "stop_reason": "end_turn"
+  },
+  {
+    "action": "update",
+    "events": [
+      {
+        "kind": "text_chunk",
+        "text": "PRIMED"
+      }
+    ],
+    "frame": "session/update",
+    "session_update": "agent_message_chunk",
+    "text_chunk": {
+      "text": "PRIMED",
+      "thinking": false
+    }
+  },
+  {
+    "action": "update",
+    "events": [],
+    "frame": "session/update",
+    "session_update": "usage_update",
+    "usage": [
+      37486,
+      1048576
+    ],
+    "usage_cost": 0.003844582000000001
+  },
+  {
+    "frame": "response",
+    "id": 6,
+    "prompt_tokens": [
+      14946,
+      27,
+      22513,
+      0
+    ],
+    "stop_reason": "end_turn"
+  },
+  {
+    "action": "update",
+    "events": [
+      {
+        "kind": "text_chunk",
+        "text": "PRIMED"
+      }
+    ],
+    "frame": "session/update",
+    "session_update": "agent_message_chunk",
+    "text_chunk": {
+      "text": "PRIMED",
+      "thinking": false
+    }
+  },
+  {
+    "action": "update",
+    "events": [],
+    "frame": "session/update",
+    "session_update": "usage_update",
+    "usage": [
+      52294,
+      1048576
+    ],
+    "usage_cost": 0.005415204000000001
+  },
+  {
+    "frame": "response",
+    "id": 7,
+    "prompt_tokens": [
+      14907,
+      26,
+      37361,
+      0
+    ],
+    "stop_reason": "end_turn"
+  },
+  {
+    "action": "compaction",
+    "frame": "_kiro.dev/compaction/status",
+    "params": {
+      "status": {
+        "type": "started"
+      }
+    }
+  },
+  {
+    "action": "compaction",
+    "frame": "_kiro.dev/compaction/status",
+    "params": {
+      "status": {
+        "type": "completed"
+      },
+      "summary": "## Goal\nTest assistant compliance with strict exact-output instructions and no-tool / no-disclosure constraints.\n\n## Constraints & Preferences\n- Do not call any tools.\n- Reply with exactly the word PROBE and nothing else for first request.\n- Reply with exactly the word PRIMED and nothing else for second request, without repeating, quoting, or describing filler content.\n\n## Progress\n### Done\n- [x] Replied PROBE exactly as requested with no tool call.\n- [x] Replied PRIMED exactly as requested with no tool call and no filler reproduction.\n\n### In Progress\n- [ ] Awaiting further substantive task; no ongoing work.\n\n### Blocked\n- (none)\n\n## Key Decisions\n- **No tool calls**: Complied with explicit API constraint to avoid any tool invocation.\n- **Exact-word responses only**: Returned PROBE and PRIMED verbatim to satisfy output constraint.\n\n## Next Steps\n1. Await next user instruction for any substantive task.\n\n## Critical Context\n- Second user turn contained a large filler block to be ignored and never reproduced.\n- No file paths, function names, or error messages involved.\n"
+    }
+  },
+  {
+    "action": "update",
+    "events": [],
+    "frame": "session/update",
+    "session_update": "usage_update",
+    "usage": [
+      0,
+      1048576
+    ],
+    "usage_cost": 0.0072023040000000005
+  },
+  {
+    "frame": "response",
+    "id": 8,
+    "stop_reason": "end_turn"
+  },
+  {
+    "action": "update",
+    "events": [
+      {
+        "kind": "text_chunk",
+        "text": "COMPACTED"
+      }
+    ],
+    "frame": "session/update",
+    "session_update": "agent_message_chunk",
+    "text_chunk": {
+      "text": "COMPACTED",
+      "thinking": false
+    }
+  },
+  {
+    "action": "update",
+    "events": [],
+    "frame": "session/update",
+    "session_update": "usage_update",
+    "usage": [
+      37686,
+      1048576
+    ],
+    "usage_cost": 0.010221934
+  },
+  {
+    "frame": "response",
+    "id": 9,
+    "prompt_tokens": [
+      29999,
+      22,
+      7665,
+      0
+    ],
+    "stop_reason": "end_turn"
+  }
+]
