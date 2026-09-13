@@ -119,10 +119,11 @@ must require the raw form.
 ### AcpProvider (`providers/acp.py`)
 
 The one concrete provider. It spawns a long-lived harness subprocess — by default
-`kiro-cli acp --agent <name>` — and speaks JSON-RPC 2.0 over stdio.
+`pi` — and speaks JSON-RPC 2.0 over stdio. (`kiro-cli acp --agent <name>`
+remains what the kiro backend spawns.)
 
 **The backend seam:** `AcpProvider`/`AcpClient` take an `acp_backend` id
-(`""` → kiro-cli, `"claude"` → `claude-agent-acp`, `"kas"` → KAS,
+(`""` → pi, `"claude"` → `claude-agent-acp`, `"kas"` → KAS,
 `"codex"` → `codex-acp`). Construction rejects an id outside
 `ACP_BACKENDS_KNOWN`, so a value that falls through every identity check cannot
 spawn kiro-cli under a foreign label. Which of those ids an operator can select
@@ -217,8 +218,10 @@ A transient 5xx that arrives *after* the turn already emitted output (the `_turn
 
 ### Installation
 
-KiroCrew drives `kiro-cli` over ACP — install it per its own docs, ensure it is
-on `PATH`, and run `kiro-cli login`. `kirocrew doctor` reports its status.
+The default backend is pi — no separate install step, it is the agent this
+gateway runs under. kiro-cli stays selectable: install it per its own docs,
+ensure it is on `PATH`, and run `kiro-cli login`. `kirocrew doctor` reports
+the status of whatever backend a deployment selects.
 
 
 ## AcpProvider: shared-runtime startup
