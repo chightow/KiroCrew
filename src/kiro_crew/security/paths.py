@@ -39,6 +39,7 @@ import logging
 import os
 import platform
 import re
+import subprocess
 import threading
 import time
 from concurrent.futures import Future
@@ -1774,6 +1775,7 @@ def _home_dir_targets_uncached(
     kiro_home_override = resolved.kiro_home
     logical_home = resolved.logical_home
     os_home = resolved.os_home
+    wsl_home = resolved.wsl_home
 
     def _anchor(root: str, d: str) -> str:
         return os.path.join(root, *_leaf_segments(d)).casefold()
@@ -1820,6 +1822,21 @@ def _home_dir_targets_uncached(
         if os_home_real.casefold() != os_home.casefold():
             for d in home_dirs:
                 sensitive_targets |= _anchor_both_separators(os_home_real, d)
+    # The Windows profile under WSL is an ALTERNATE WHOLE home (see
+    # :func:`_resolve_wsl_home`): every entry re-anchors under it, the same as
+    # ``os_home`` above, because DrvFs makes the operator's Windows-side
+    # credential stores readable to the child at spellings the Linux-home
+    # anchors never name. Both separator joins, like ``os_home``: the root may
+    # arrive from the operator's own env spelling rather than from
+    # ``Path.home()``, and emitting both is strictly widening -- the safe
+    # direction for this gate.
+    if wsl_home:
+        for d in home_dirs:
+            sensitive_targets |= _anchor_both_separators(wsl_home, d)
+        wsl_real = _realpath_or_none(wsl_home) or wsl_home
+        if wsl_real.casefold() != wsl_home.casefold():
+            for d in home_dirs:
+                sensitive_targets |= _anchor_both_separators(wsl_real, d)
     # ``home`` arrives RESOLVED from the cache key, so this is normally a no-op;
     # it still opens the directory on Windows, which is why the whole rebuild
     # runs off the loop.  None degrades to the lexical anchors already in the set.
@@ -1996,6 +2013,14 @@ class _ResolvedRoots(NamedTuple):
     # at the pod-path spelling while the identical bytes at ``~/.aws`` are
     # refused.
     os_home: str | None
+    # The Windows user-profile root as seen from inside WSL (``/mnt/c/Users/you``),
+    # or ``None`` off WSL. An ALTERNATE WHOLE home like ``os_home`` above -- DrvFs
+    # exposes the operator's Windows-side credential stores to the child -- so it
+    # is a field here for the same reason that one is: an override that would move
+    # a target must invalidate the cached set instead of serving targets anchored
+    # on the previous value. Resolved by :func:`_resolve_wsl_home` in the same
+    # worker call as every other root.
+    wsl_home: str | None
 
 
 #: Sensitive leaf -> the ``$HOME``-override VARIABLES that move it, and the
@@ -2040,6 +2065,170 @@ def _resolved_env_root(name: str) -> str | None:
     # keeps the lexical form, exactly as the OSError arm did.  ``Path.resolve()``
     # is ``os.path.realpath`` underneath, so the resolved spelling is unchanged.
     return _realpath_or_none(expanded) or _lexical_root(expanded)
+
+
+#: Explicit override for the Windows user-profile root as seen from inside WSL
+#: (e.g. ``/mnt/c/Users/you``), consulted only when ``is_wsl()`` holds. A Linux
+#: spelling is required: on Linux a backslash is an ordinary filename character,
+#: so a ``C:\\Users\\you`` value would anchor a target that matches nothing
+#: (harmless -- an extra target under a bogus value -- but covering nothing
+#: either). Unset in the common case, where the interop query below derives the
+#: same root.
+WSL_WINDOWS_HOME_ENV = "KIROCREW_WSL_HOME"
+
+#: Timeout for one Win32 interop hop while deriving the profile root. Sized
+#: against the anchor-rebuild budget (``_PATH_RESOLVE_REBUILD_TIMEOUT_SECS``):
+#: a cold ``cmd.exe`` can take a second to spawn, so this must fit twice over
+#: (profile query + ``wslpath``) with room left for the ~130 realpaths the
+#: rebuild otherwise performs. A hop that exceeds it degrades THIS build to the
+#: base anchors rather than stalling the gate: the Windows-home cover is
+#: defense in depth over the permission gate, and a slow interop must cost
+#: coverage, never availability.
+_WSL_INTEROP_TIMEOUT_SECS = 2.0
+
+#: Sentinel: the interop query has not run yet in this process. ``None`` is a
+#: MEMOIZED answer (interop permanently unavailable), never "not yet asked".
+_WSL_INTEROP_UNASKED: object = object()
+
+_wsl_interop_memo: str | None | object = _WSL_INTEROP_UNASKED
+
+
+class _InteropSlow(Exception):
+    """The interop query exceeded its hop timeout: retry, never memoize.
+
+    A cold ``cmd.exe`` being slow once says nothing about the next call, so
+    memoizing a timeout would drop the cover for the process lifetime over one
+    slow spawn. Raised only for timeouts; every other failure mode answers
+    ``None`` through the normal return and IS memoized.
+    """
+
+
+def _reset_wsl_home_cache() -> None:
+    """Forget the memoized interop answer.
+
+    Tests only, like clearing ``_home_targets_cache``: production WSL-ness does
+    not change under a running gateway, and the target-set TTL already bounds
+    every other staleness here.
+    """
+    global _wsl_interop_memo
+    _wsl_interop_memo = _WSL_INTEROP_UNASKED
+
+
+def _query_interop_windows_home() -> str | None:
+    """The Windows profile as a Linux path, via Win32 interop, or ``None``.
+
+    ``cmd.exe /c echo %USERPROFILE%`` names the profile in Windows spelling;
+    ``wslpath -u`` converts it to the DrvFs spelling the sandbox denies and
+    the gate compares. Either hop failing -- no interop (disabled, or a host
+    without ``wslpath``), a literal ``%USERPROFILE%`` echoed back unexpanded,
+    junk out of ``wslpath`` -- answers ``None``, EXCEPT a hop timeout, which
+    raises :class:`_InteropSlow` so the caller retries on the next rebuild
+    instead of memoizing one slow spawn as permanent. ``None`` degrades to the
+    base anchors: the Linux home stays fenced, so this costs coverage, never
+    correctness. Runs on the ``mc-pathres`` pool via :func:`_resolve_root_anchors`,
+    never on the event loop: two process spawns do not belong on it.
+    """
+    try:
+        probe = subprocess.run(
+            ["cmd.exe", "/c", "echo", "%USERPROFILE%"],
+            capture_output=True,
+            text=True,
+            timeout=_WSL_INTEROP_TIMEOUT_SECS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise _InteropSlow(str(exc)) from exc
+    except OSError:
+        return None
+    if probe.returncode != 0:
+        return None
+    windows_spelling = (probe.stdout or "").strip()
+    if not re.fullmatch(r"[A-Za-z]:\\.+", windows_spelling):
+        # An unexpanded ``%USERPROFILE%`` literal or anything that is not a
+        # drive-rooted Windows path: never hand it to ``wslpath``, whose output
+        # on junk would be a guess.
+        return None
+    try:
+        converted = subprocess.run(
+            ["wslpath", "-u", windows_spelling],
+            capture_output=True,
+            text=True,
+            timeout=_WSL_INTEROP_TIMEOUT_SECS,
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise _InteropSlow(str(exc)) from exc
+    except OSError:
+        return None
+    if converted.returncode != 0:
+        return None
+    return (converted.stdout or "").strip() or None
+
+
+def _memoized_interop_windows_home() -> str | None:
+    """Process-memoized :func:`_query_interop_windows_home`.
+
+    The answer cannot change under a running gateway (same WSL instance, same
+    Windows profile), while the cost -- up to two interop spawns -- would
+    otherwise land on every target-set rebuild. Only successes and permanent
+    failures are memoized; a timeout (:class:`_InteropSlow`) returns ``None``
+    for this build and retries on the next one.
+    """
+    global _wsl_interop_memo
+    if _wsl_interop_memo is not _WSL_INTEROP_UNASKED:
+        return None if _wsl_interop_memo is None else str(_wsl_interop_memo)
+    try:
+        answer = _query_interop_windows_home()
+    except _InteropSlow:
+        return None
+    _wsl_interop_memo = answer
+    return answer
+
+
+def _resolve_wsl_home() -> str | None:
+    """The Windows profile root the WSL fence anchors on, or ``None``.
+
+    The profile is an ALTERNATE WHOLE home, not one adapter's leaf: the
+    operator's Windows-side ``.aws``, ``.ssh``, ``.kube`` and every harness
+    token under it are visible to a WSL child through DrvFs (``/mnt/c/...``),
+    at spellings no Linux-home anchor covers. So -- like ``os_home`` -- EVERY
+    ``home_dirs`` entry re-anchors under it in
+    :func:`_home_dir_targets_uncached`, and every non-excluded leaf in
+    :func:`sandbox_credential_targets`, rather than mapping single leaves
+    through ``_OVERRIDE_ANCHORED_LEAVES``.
+
+    Detection is :func:`kiro_crew.sandbox.is_wsl`, imported at call time: that
+    module reaches this package only at call time itself, so a module-level
+    import here would close a load-time cycle -- the same reason the layer-two
+    gates below do theirs in-body. Off WSL this is always ``None``, so native
+    hosts keep byte-identical target sets however the override is set.
+
+    The root itself comes from ``KIROCREW_WSL_HOME`` first (the deterministic
+    seam: set it when interop is disabled but DrvFs is still mounted), else the
+    memoized interop query. Rejected roots -- non-absolute, or a bare
+    drive/filesystem root (which would fence every workspace into unreadability)
+    -- answer
+    ``None``: the base anchors still hold, so a rejected root costs the extra
+    cover, never the existing one.
+    """
+    from kiro_crew.sandbox import is_wsl
+
+    if not is_wsl():
+        return None
+    raw = _expanded_env_root(WSL_WINDOWS_HOME_ENV)
+    if raw is None:
+        raw = _memoized_interop_windows_home()
+        if raw is None:
+            return None
+    lexical = _lexical_root(raw)
+    if not os.path.isabs(lexical):
+        return None
+    # A root with no path below the anchor -- ``/`` on POSIX, or a bare drive
+    # root (which is also what a lone ``/`` lexes to on Windows, whose ``isabs``
+    # calls it drive-relative) -- would fence every workspace into unreadability.
+    # Judged past ``splitdrive`` so the check holds on both platforms.
+    _drive, _tail = os.path.splitdrive(lexical)
+    if not _tail.strip(os.sep):
+        return None
+    return _realpath_or_none(lexical) or lexical
 
 
 def _expanded_env_root(name: str) -> str | None:
@@ -2095,7 +2284,11 @@ def _resolve_root_anchors(logical_home: str) -> _ResolvedRoots:
         (env, _resolved_env_root(env)) for env in host_auth.home_override_env_vars()
     )
     return _ResolvedRoots(
-        home=home, logical_home=logical_home, adapter_roots=adapter_roots, **overrides
+        home=home,
+        logical_home=logical_home,
+        adapter_roots=adapter_roots,
+        wsl_home=_resolve_wsl_home(),
+        **overrides
     )
 
 
@@ -2543,6 +2736,18 @@ def sandbox_credential_targets(exclude_leaves: tuple[str, ...] = ()) -> tuple[st
             root = adapter_roots.get(env)
             if root:
                 targets.add(os.path.join(root, *_leaf_segments(under_root)))
+    # The WSL Windows profile (see :func:`_resolve_wsl_home`): an alternate
+    # whole home whose credential stores DrvFs exposes to the child, so every
+    # non-excluded leaf anchors under it exactly like the Linux home above.
+    # Non-casefolded, like the anchors above: these are handed to a sandbox
+    # backend to deny on disk, where a casefolded path denies nothing.
+    if resolved.wsl_home:
+        wsl_anchors = {resolved.wsl_home}
+        wsl_real = _realpath_or_none(resolved.wsl_home) or resolved.wsl_home
+        wsl_anchors.add(wsl_real)
+        for anchor in wsl_anchors:
+            for d in leaves:
+                targets.add(os.path.join(anchor, *_leaf_segments(d)))
     return tuple(sorted(targets))
 
 
